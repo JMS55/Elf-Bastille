@@ -1,4 +1,5 @@
-use specs::{Component, VecStorage};
+use specs::storage::{BTreeStorage, DenseVecStorage, VecStorage};
+use specs::Component;
 use specs_derive::Component;
 
 #[derive(Component)]
@@ -9,7 +10,7 @@ pub struct Position {
 }
 
 #[derive(Component)]
-#[storage(VecStorage)]
+#[storage(DenseVecStorage)]
 pub struct Movement {
     pub path: Vec<Position>,
     pub move_speed: u32,
@@ -22,11 +23,11 @@ pub struct Sprite {
 }
 
 #[derive(Component)]
-#[storage(VecStorage)]
+#[storage(BTreeStorage)]
 pub struct Elf;
 
 #[derive(Component)]
-#[storage(VecStorage)]
+#[storage(BTreeStorage)]
 pub struct Tree {
     pub durability: u32,
 }
