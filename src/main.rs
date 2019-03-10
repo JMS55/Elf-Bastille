@@ -26,7 +26,9 @@ fn main() {
     // Create the dispatcher
     let mut dispatcher = DispatcherBuilder::new()
         .with(ElfSystem, "elf_system", &[])
-        .with_thread_local(MovementSystem)
+        .with_thread_local(MovementSystem {
+            // updates_since_last_pathfind: 0,
+        })
         .build();
 
     // Create entities
@@ -35,18 +37,33 @@ fn main() {
             .create_entity()
             .with(Elf {})
             .with(Position { x: 0, y: 0 })
+            .with(Movement {
+                target: None,
+                path: Vec::new(),
+                move_speed: 1,
+            })
             .with(Sprite { name: "elf" })
             .build();
         world
             .create_entity()
             .with(Elf {})
             .with(Position { x: 20, y: 20 })
+            .with(Movement {
+                target: None,
+                path: Vec::new(),
+                move_speed: 1,
+            })
             .with(Sprite { name: "elf" })
             .build();
         world
             .create_entity()
             .with(Elf {})
             .with(Position { x: 10, y: 10 })
+            .with(Movement {
+                target: None,
+                path: Vec::new(),
+                move_speed: 1,
+            })
             .with(Sprite { name: "elf" })
             .build();
         world
@@ -109,9 +126,8 @@ fn main() {
     'mainloop: loop {
         // Handle input
         for event in sdl_context.event_pump().unwrap().poll_iter() {
-            match event {
-                Event::Quit { .. } => break 'mainloop,
-                _ => {}
+            if let Event::Quit { .. } = event {
+                break 'mainloop;
             }
         }
 

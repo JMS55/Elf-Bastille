@@ -14,15 +14,13 @@ pub struct RenderSystem<'t> {
 impl<'t, 's> System<'s> for RenderSystem<'t> {
     type SystemData = (ReadStorage<'s, Position>, WriteStorage<'s, Sprite>);
 
-    fn run(&mut self, data: Self::SystemData) {
-        let (position_data, sprite_data) = data;
-
+    fn run(&mut self, (position_data, sprite_data): Self::SystemData) {
         self.canvas.clear();
 
         for (position, sprite) in (&position_data, &sprite_data).join() {
             self.canvas
                 .copy(
-                    self.textures.get(sprite.name).unwrap(),
+                    &self.textures[sprite.name],
                     None,
                     Some(Rect::new(
                         (position.x * self.tile_size).saturating_sub(self.tile_size) as i32,
