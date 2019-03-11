@@ -10,8 +10,8 @@ use systems::*;
 mod components;
 mod systems;
 
-const WORLD_WIDTH: u32 = 20;
-const WORLD_HEIGHT: u32 = 20;
+pub const WORLD_WIDTH: u32 = 20;
+pub const WORLD_HEIGHT: u32 = 20;
 const TILE_SIZE: u32 = 32;
 
 fn main() {
@@ -26,9 +26,7 @@ fn main() {
     // Create the dispatcher
     let mut dispatcher = DispatcherBuilder::new()
         .with(ElfSystem, "elf_system", &[])
-        .with_thread_local(MovementSystem {
-            // updates_since_last_pathfind: 0,
-        })
+        .with_thread_local(MovementSystem)
         .build();
 
     // Create entities
@@ -39,7 +37,6 @@ fn main() {
             .with(Position { x: 0, y: 0 })
             .with(Movement {
                 target: None,
-                path: Vec::new(),
                 move_speed: 1,
             })
             .with(Sprite { name: "elf" })
@@ -50,7 +47,6 @@ fn main() {
             .with(Position { x: 20, y: 20 })
             .with(Movement {
                 target: None,
-                path: Vec::new(),
                 move_speed: 1,
             })
             .with(Sprite { name: "elf" })
@@ -61,7 +57,6 @@ fn main() {
             .with(Position { x: 10, y: 10 })
             .with(Movement {
                 target: None,
-                path: Vec::new(),
                 move_speed: 1,
             })
             .with(Sprite { name: "elf" })
