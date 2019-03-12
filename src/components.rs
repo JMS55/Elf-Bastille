@@ -1,3 +1,4 @@
+use crate::{WORLD_HEIGHT, WORLD_WIDTH};
 use specs::storage::{BTreeStorage, DenseVecStorage, VecStorage};
 use specs::Component;
 use specs_derive::Component;
@@ -7,6 +8,41 @@ use specs_derive::Component;
 pub struct Position {
     pub x: u32,
     pub y: u32,
+}
+
+impl Position {
+    pub fn get_adjacent(&self) -> Vec<Self> {
+        let mut adjacent = Vec::with_capacity(4);
+        // Above
+        if self.y != 0 {
+            adjacent.push(Self {
+                x: self.x,
+                y: self.y - 1,
+            });
+        }
+        // Below
+        if self.y != WORLD_HEIGHT {
+            adjacent.push(Self {
+                x: self.x,
+                y: self.y + 1,
+            });
+        }
+        // Left
+        if self.x != 0 {
+            adjacent.push(Self {
+                x: self.x - 1,
+                y: self.y,
+            });
+        }
+        // Right
+        if self.x != WORLD_WIDTH {
+            adjacent.push(Self {
+                x: self.x + 1,
+                y: self.y,
+            });
+        }
+        adjacent
+    }
 }
 
 #[derive(Component, Clone, Eq, PartialEq, Hash, Debug)]

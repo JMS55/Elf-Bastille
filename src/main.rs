@@ -54,6 +54,26 @@ fn main() {
         world
             .create_entity()
             .with(Elf {})
+            .with(Position { x: 2, y: 15 })
+            .with(Movement {
+                target: None,
+                move_speed: 1,
+            })
+            .with(Sprite { name: "elf" })
+            .build();
+        world
+            .create_entity()
+            .with(Elf {})
+            .with(Position { x: 10, y: 14 })
+            .with(Movement {
+                target: None,
+                move_speed: 1,
+            })
+            .with(Sprite { name: "elf" })
+            .build();
+        world
+            .create_entity()
+            .with(Elf {})
             .with(Position { x: 10, y: 10 })
             .with(Movement {
                 target: None,
@@ -77,6 +97,18 @@ fn main() {
             .create_entity()
             .with(Tree { durability: 6 })
             .with(Position { x: 12, y: 17 })
+            .with(Sprite { name: "tree" })
+            .build();
+        world
+            .create_entity()
+            .with(Tree { durability: 8 })
+            .with(Position { x: 7, y: 16 })
+            .with(Sprite { name: "tree" })
+            .build();
+        world
+            .create_entity()
+            .with(Tree { durability: 8 })
+            .with(Position { x: 20, y: 0 })
             .with(Sprite { name: "tree" })
             .build();
     }
