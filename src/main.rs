@@ -26,7 +26,13 @@ fn main() {
     let mut dispatcher = DispatcherBuilder::new()
         .with(ElfSystem, "elf", &[])
         .with(PathfindingSystem, "pathfinding", &["elf"])
-        .with(MovementSystem, "movement", &["pathfinding"])
+        .with(
+            MovementSystem {
+                updates_since_path_recalculate: 0,
+            },
+            "movement",
+            &["pathfinding"],
+        )
         .build();
 
     // Create entities
@@ -116,6 +122,33 @@ fn main() {
             .with(Position { x: 20, y: 0 })
             .with(Sprite { name: "tree" })
             .build();
+        for x in 8..=20 {
+            world
+                .create_entity()
+                .with(Position { x, y: 7 })
+                .with(Sprite { name: "wall" })
+                .build();
+        }
+        world
+            .create_entity()
+            .with(Position { x: 8, y: 8 })
+            .with(Sprite { name: "wall" })
+            .build();
+        world
+            .create_entity()
+            .with(Position { x: 8, y: 9 })
+            .with(Sprite { name: "wall" })
+            .build();
+        world
+            .create_entity()
+            .with(Position { x: 8, y: 10 })
+            .with(Sprite { name: "wall" })
+            .build();
+        world
+            .create_entity()
+            .with(Position { x: 8, y: 11 })
+            .with(Sprite { name: "wall" })
+            .build();
     }
 
     // Initialize SDL2
@@ -141,9 +174,11 @@ fn main() {
     let texture_creator = canvas.texture_creator();
     let elf_texture = texture_creator.load_texture("elf.png").unwrap();
     let tree_texture = texture_creator.load_texture("tree.png").unwrap();
+    let wall_texture = texture_creator.load_texture("wall.png").unwrap();
     let mut textures = HashMap::new();
     textures.insert("elf", elf_texture);
     textures.insert("tree", tree_texture);
+    textures.insert("wall", wall_texture);
     let mut render_system = RenderSystem {
         tile_size: TILE_SIZE,
         textures,
@@ -151,7 +186,7 @@ fn main() {
     };
 
     // Setup timer system
-    let dt = Duration::from_millis(500);
+    let dt = Duration::from_millis(100);
     let mut current_time = Instant::now();
     let mut accumulator = Duration::from_secs(0);
 

@@ -3,7 +3,9 @@ use rayon::iter::ParallelIterator;
 use specs::{Join, ParJoin, System, WriteStorage};
 use std::collections::HashSet;
 
-pub struct MovementSystem;
+pub struct MovementSystem {
+    pub updates_since_path_recalculate: u32,
+}
 
 impl<'a> System<'a> for MovementSystem {
     type SystemData = (WriteStorage<'a, Position>, WriteStorage<'a, Movement>);
@@ -13,9 +15,14 @@ impl<'a> System<'a> for MovementSystem {
             .join()
             .map(|(position, _)| *position)
             .collect::<HashSet<_>>();
+
         (&mut position_data, &mut movement_data)
             .par_join()
             .for_each(|(position, movement)| {
+                if self.updates_since_path_recalculate == 5 {
+                    movement.path.clear();
+                }
+
                 for _ in 0..movement.move_speed {
                     if let Some(potential_new_position) = movement.path.pop() {
                         if !obstacle_positions.contains(&potential_new_position) {
@@ -27,5 +34,11 @@ impl<'a> System<'a> for MovementSystem {
                     }
                 }
             });
+
+        if self.updates_since_path_recalculate == 5 {
+            self.updates_since_path_recalculate = 0;
+        } else {
+            self.updates_since_path_recalculate += 1;
+        }
     }
 }
