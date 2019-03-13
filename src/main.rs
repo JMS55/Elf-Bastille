@@ -4,7 +4,6 @@ use sdl2::image::LoadTexture;
 use specs::{Builder, DispatcherBuilder, RunNow, World};
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
-use systems::RenderSystem;
 use systems::*;
 
 mod components;
@@ -25,8 +24,9 @@ fn main() {
 
     // Create the dispatcher
     let mut dispatcher = DispatcherBuilder::new()
-        .with(ElfSystem, "elf_system", &[])
-        .with_thread_local(MovementSystem)
+        .with(ElfSystem, "elf", &[])
+        .with(PathfindingSystem, "pathfinding", &["elf"])
+        .with(MovementSystem, "movement", &["pathfinding"])
         .build();
 
     // Create entities
@@ -37,6 +37,7 @@ fn main() {
             .with(Position { x: 0, y: 0 })
             .with(Movement {
                 target: None,
+                path: Vec::new(),
                 move_speed: 1,
             })
             .with(Sprite { name: "elf" })
@@ -47,6 +48,7 @@ fn main() {
             .with(Position { x: 20, y: 20 })
             .with(Movement {
                 target: None,
+                path: Vec::new(),
                 move_speed: 1,
             })
             .with(Sprite { name: "elf" })
@@ -57,6 +59,7 @@ fn main() {
             .with(Position { x: 2, y: 15 })
             .with(Movement {
                 target: None,
+                path: Vec::new(),
                 move_speed: 1,
             })
             .with(Sprite { name: "elf" })
@@ -67,6 +70,7 @@ fn main() {
             .with(Position { x: 10, y: 14 })
             .with(Movement {
                 target: None,
+                path: Vec::new(),
                 move_speed: 1,
             })
             .with(Sprite { name: "elf" })
@@ -77,6 +81,7 @@ fn main() {
             .with(Position { x: 10, y: 10 })
             .with(Movement {
                 target: None,
+                path: Vec::new(),
                 move_speed: 1,
             })
             .with(Sprite { name: "elf" })
