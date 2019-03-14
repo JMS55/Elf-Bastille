@@ -9,12 +9,9 @@ pub struct PathfindingSystem;
 impl<'a> System<'a> for PathfindingSystem {
     type SystemData = (WriteStorage<'a, Movement>, ReadStorage<'a, Position>);
 
-    // A* pathfind in parallel to adjacent tile to target, using non movement positions as obstacles
+    // A* pathfind in parallel to adjacent tile to target
     fn run(&mut self, (mut movement_data, position_data): Self::SystemData) {
-        let obstacle_positions = (&position_data, !&movement_data)
-            .join()
-            .map(|(position, _)| *position)
-            .collect::<HashSet<_>>();
+        let obstacle_positions = (&position_data).join().collect::<HashSet<_>>();
         (&mut movement_data, &position_data)
             .par_join()
             .for_each(|(movement, position)| {

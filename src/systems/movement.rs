@@ -14,7 +14,11 @@ impl<'a> System<'a> for MovementSystem {
             .map(|position| position.to_owned())
             .collect::<HashSet<_>>();
 
-        for (position, movement) in (&mut position_data, &mut movement_data).join() {
+        let mut data = (&mut position_data, &mut movement_data)
+            .join()
+            .collect::<Vec<_>>();
+        data.sort();
+        for (position, movement) in data {
             for _ in 0..movement.move_speed {
                 match movement.path.pop() {
                     Some(potential_new_position) => {
