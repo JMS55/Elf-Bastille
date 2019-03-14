@@ -42,7 +42,7 @@ fn main() {
         world
             .create_entity()
             .with(Elf {})
-            .with(Position { x: 20, y: 20 })
+            .with(Position { x: 19, y: 19 })
             .with(Movement {
                 target: None,
                 path: Vec::new(),
@@ -110,10 +110,10 @@ fn main() {
         world
             .create_entity()
             .with(Tree { durability: 8 })
-            .with(Position { x: 20, y: 0 })
+            .with(Position { x: 19, y: 0 })
             .with(Sprite { name: "tree" })
             .build();
-        for x in 8..=20 {
+        for x in 8..=19 {
             world
                 .create_entity()
                 .with(Position { x, y: 7 })

@@ -22,7 +22,7 @@ impl Position {
             });
         }
         // Below
-        if self.y != WORLD_HEIGHT {
+        if self.y != WORLD_HEIGHT - 1 {
             adjacent.push(Self {
                 x: self.x,
                 y: self.y + 1,
@@ -36,7 +36,7 @@ impl Position {
             });
         }
         // Right
-        if self.x != WORLD_WIDTH {
+        if self.x != WORLD_WIDTH - 1 {
             adjacent.push(Self {
                 x: self.x + 1,
                 y: self.y,

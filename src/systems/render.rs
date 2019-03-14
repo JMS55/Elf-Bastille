@@ -23,8 +23,8 @@ impl<'t, 's> System<'s> for RenderSystem<'t> {
                     &self.textures[sprite.name],
                     None,
                     Some(Rect::new(
-                        (position.x * self.tile_size).saturating_sub(self.tile_size) as i32,
-                        (position.y * self.tile_size).saturating_sub(self.tile_size) as i32,
+                        (position.x * self.tile_size) as i32,
+                        (position.y * self.tile_size) as i32,
                         self.tile_size,
                         self.tile_size,
                     )),
