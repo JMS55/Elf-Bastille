@@ -14,24 +14,22 @@ impl<'a> System<'a> for MovementSystem {
             .map(|position| position.to_owned())
             .collect::<HashSet<_>>();
 
-        (&mut position_data, &mut movement_data)
-            .join()
-            .for_each(|(position, movement)| {
-                for _ in 0..movement.move_speed {
-                    match movement.path.pop() {
-                        Some(potential_new_position) => {
-                            if !obstacle_positions.contains(&potential_new_position) {
-                                obstacle_positions.remove(position);
-                                obstacle_positions.insert(potential_new_position);
-                                *position = potential_new_position;
-                            }
+        for (position, movement) in (&mut position_data, &mut movement_data).join() {
+            for _ in 0..movement.move_speed {
+                match movement.path.pop() {
+                    Some(potential_new_position) => {
+                        if !obstacle_positions.contains(&potential_new_position) {
+                            obstacle_positions.remove(position);
+                            obstacle_positions.insert(potential_new_position);
+                            *position = potential_new_position;
                         }
-                        None => break,
                     }
+                    None => break,
                 }
+            }
 
-                movement.target = None;
-                movement.path.clear();
-            });
+            movement.target = None;
+            movement.path.clear();
+        }
     }
 }
