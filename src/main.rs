@@ -1,6 +1,7 @@
 use components::*;
 use sdl2::event::Event;
-use sdl2::image::LoadTexture;
+use sdl2::image::{LoadSurface, LoadTexture};
+use sdl2::surface::Surface;
 use specs::{Builder, RunNow, World};
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
@@ -162,7 +163,7 @@ fn main() {
     let video_subsystem = sdl_context
         .video()
         .expect("Could not initialize sdl2 video subsystem");
-    let window = video_subsystem
+    let mut window = video_subsystem
         .window(
             "Elf Bastille",
             WORLD_WIDTH * TILE_SIZE,
@@ -170,6 +171,8 @@ fn main() {
         )
         .build()
         .expect("Could not create window");
+    let icon = Surface::from_file("elf.png").unwrap();
+    window.set_icon(icon);
     let mut canvas = window
         .into_canvas()
         .build()
