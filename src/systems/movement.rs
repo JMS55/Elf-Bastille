@@ -17,7 +17,9 @@ impl<'a> System<'a> for MovementSystem {
         let mut data = (&mut position_data, &mut movement_data)
             .join()
             .collect::<Vec<_>>();
-        data.sort();
+        data.sort_unstable_by(|(_, movement_a), (_, movement_b)| {
+            movement_a.path.len().cmp(&movement_b.path.len())
+        });
         for (position, movement) in data {
             for _ in 0..movement.move_speed {
                 match movement.path.pop() {
