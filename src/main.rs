@@ -1,7 +1,7 @@
 use components::*;
 use sdl2::event::Event;
 use sdl2::image::LoadTexture;
-use specs::{Builder, DispatcherBuilder, RunNow, World};
+use specs::{Builder, RunNow, World};
 use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use systems::*;
@@ -22,18 +22,9 @@ fn main() {
     world.register::<Elf>();
     world.register::<Tree>();
 
-    // Create the dispatcher
-    let mut dispatcher = DispatcherBuilder::new()
-        .with(ElfSystem, "elf", &[])
-        .with(PathfindingSystem, "pathfinding", &["elf"])
-        .with(
-            MovementSystem {
-                updates_since_path_recalculate: 0,
-            },
-            "movement",
-            &["pathfinding"],
-        )
-        .build();
+    let mut elf_system = ElfSystem;
+    let mut pathfinding_system = PathfindingSystem;
+    let mut movement_system = MovementSystem;
 
     // Create entities
     {
@@ -149,6 +140,21 @@ fn main() {
             .with(Position { x: 8, y: 11 })
             .with(Sprite { name: "wall" })
             .build();
+        world
+            .create_entity()
+            .with(Position { x: 8, y: 12 })
+            .with(Sprite { name: "wall" })
+            .build();
+        world
+            .create_entity()
+            .with(Position { x: 8, y: 13 })
+            .with(Sprite { name: "wall" })
+            .build();
+        world
+            .create_entity()
+            .with(Position { x: 8, y: 14 })
+            .with(Sprite { name: "wall" })
+            .build();
     }
 
     // Initialize SDL2
@@ -186,7 +192,7 @@ fn main() {
     };
 
     // Setup timer system
-    let dt = Duration::from_millis(100);
+    let dt = Duration::from_millis(300);
     let mut current_time = Instant::now();
     let mut accumulator = Duration::from_secs(0);
 
@@ -203,8 +209,10 @@ fn main() {
         accumulator += new_time - current_time;
         current_time = new_time;
         while accumulator >= dt {
-            dispatcher.dispatch(&world.res);
+            elf_system.run_now(&world.res);
             world.maintain();
+            pathfinding_system.run_now(&world.res);
+            movement_system.run_now(&world.res);
             accumulator -= dt;
         }
 

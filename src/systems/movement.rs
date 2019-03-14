@@ -1,44 +1,37 @@
 use crate::components::{Movement, Position};
-use rayon::iter::ParallelIterator;
-use specs::{Join, ParJoin, System, WriteStorage};
+use specs::{Join, System, WriteStorage};
 use std::collections::HashSet;
 
-pub struct MovementSystem {
-    pub updates_since_path_recalculate: u32,
-}
+pub struct MovementSystem;
 
 impl<'a> System<'a> for MovementSystem {
     type SystemData = (WriteStorage<'a, Position>, WriteStorage<'a, Movement>);
 
     fn run(&mut self, (mut position_data, mut movement_data): Self::SystemData) {
-        let obstacle_positions = (&position_data, !&movement_data)
+        // Local copy of positions to use for obstacle detection, should be kept in sync when changing movement entity positions
+        let mut obstacle_positions = (&position_data)
             .join()
-            .map(|(position, _)| *position)
+            .map(|position| position.to_owned())
             .collect::<HashSet<_>>();
 
         (&mut position_data, &mut movement_data)
-            .par_join()
+            .join()
             .for_each(|(position, movement)| {
-                if self.updates_since_path_recalculate == 5 {
-                    movement.path.clear();
-                }
-
                 for _ in 0..movement.move_speed {
-                    if let Some(potential_new_position) = movement.path.pop() {
-                        if !obstacle_positions.contains(&potential_new_position) {
-                            *position = potential_new_position;
+                    match movement.path.pop() {
+                        Some(potential_new_position) => {
+                            if !obstacle_positions.contains(&potential_new_position) {
+                                obstacle_positions.remove(position);
+                                obstacle_positions.insert(potential_new_position);
+                                *position = potential_new_position;
+                            }
                         }
-                    } else {
-                        movement.target = None;
-                        break;
+                        None => break,
                     }
                 }
-            });
 
-        if self.updates_since_path_recalculate == 5 {
-            self.updates_since_path_recalculate = 0;
-        } else {
-            self.updates_since_path_recalculate += 1;
-        }
+                movement.target = None;
+                movement.path.clear();
+            });
     }
 }

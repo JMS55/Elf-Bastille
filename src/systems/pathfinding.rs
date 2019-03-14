@@ -9,7 +9,7 @@ pub struct PathfindingSystem;
 impl<'a> System<'a> for PathfindingSystem {
     type SystemData = (WriteStorage<'a, Movement>, ReadStorage<'a, Position>);
 
-    // A* pathfind in parallel to adjacent tile to target, using non movement positions for collision
+    // A* pathfind in parallel to adjacent tile to target, using non movement positions as obstacles
     fn run(&mut self, (mut movement_data, position_data): Self::SystemData) {
         let obstacle_positions = (&position_data, !&movement_data)
             .join()
@@ -18,10 +18,8 @@ impl<'a> System<'a> for PathfindingSystem {
         (&mut movement_data, &position_data)
             .par_join()
             .for_each(|(movement, position)| {
-                if movement.path.is_empty() && movement.target.is_some() {
-                    if let Some(goal) = movement
-                        .target
-                        .unwrap()
+                if let Some(target) = movement.target {
+                    if let Some(goal) = target
                         .get_adjacent()
                         .iter()
                         .filter(|position| !obstacle_positions.contains(position))
@@ -59,13 +57,11 @@ impl<'a> System<'a> for PathfindingSystem {
                             }
                         }
 
-                        let mut path = Vec::with_capacity(came_from.len());
                         let mut current = *goal;
                         while current != *position {
-                            path.push(current);
+                            movement.path.push(current);
                             current = came_from.get(&current).unwrap().unwrap().position;
                         }
-                        movement.path = path;
                     }
                 }
             });

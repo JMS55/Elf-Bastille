@@ -32,8 +32,8 @@ impl<'a> System<'a> for ElfSystem {
                     entities.delete(entity).unwrap();
                 }
             }
-            // If not adjacent to tree, and no target, set target as closet alive tree (ignoring obstacles)
-            else if elf_movement.target == None {
+            // If not adjacent to tree set target as closet alive tree (ignoring obstacles)
+            else {
                 {
                     elf_movement.target = (&tree_data, &position_data)
                         .join()
