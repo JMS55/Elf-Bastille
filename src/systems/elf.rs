@@ -22,10 +22,9 @@ impl<'a> System<'a> for ElfSystem {
             // If adjacent to alive tree, damage it, marking it for deletion if killed
             if let Some((entity, tree, _)) = (&entities, &mut tree_data, &position_data)
                 .join()
-                .filter(|(_, tree, tree_position)| {
+                .find(|(_, tree, tree_position)| {
                     tree.durability != 0 && elf_position.get_adjacent().contains(tree_position)
                 })
-                .next()
             {
                 tree.durability -= 1;
                 if tree.durability == 0 {
@@ -41,7 +40,7 @@ impl<'a> System<'a> for ElfSystem {
                             0 => None,
                             _ => Some(*tree_position),
                         })
-                        .min_by_key(|tree_position| elf_position.get_distance_from(tree_position))
+                        .min_by_key(|tree_position| elf_position.get_distance_from(*tree_position))
                 }
             }
         }

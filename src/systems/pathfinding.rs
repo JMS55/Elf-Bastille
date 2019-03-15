@@ -19,8 +19,7 @@ impl<'a> System<'a> for PathfindingSystem {
                     if let Some(goal) = target
                         .get_adjacent()
                         .iter()
-                        .filter(|position| !obstacle_positions.contains(position))
-                        .next()
+                        .find(|position| !obstacle_positions.contains(position))
                     {
                         let mut frontier = BinaryHeap::new();
                         let mut came_from = HashMap::new();
@@ -42,12 +41,12 @@ impl<'a> System<'a> for PathfindingSystem {
                                 .into_iter()
                                 .filter(|adjacent| !obstacle_positions.contains(adjacent))
                             {
-                                let new_cost = cost_so_far.get(&visiting.position).unwrap() + 1;
+                                let new_cost = cost_so_far[&visiting.position] + 1;
                                 if !cost_so_far.contains_key(&adjacent)
                                     || new_cost < cost_so_far[&adjacent]
                                 {
                                     cost_so_far.insert(adjacent, new_cost);
-                                    let priority = new_cost + goal.get_distance_from(&adjacent);
+                                    let priority = new_cost + goal.get_distance_from(adjacent);
                                     frontier.push(FrontierState::new(adjacent, priority));
                                     came_from.insert(adjacent, Some(visiting));
                                 }
@@ -57,7 +56,7 @@ impl<'a> System<'a> for PathfindingSystem {
                         let mut current = *goal;
                         while current != *position {
                             movement.path.push(current);
-                            current = came_from.get(&current).unwrap().unwrap().position;
+                            current = came_from[&current].unwrap().position;
                         }
                     }
                 }

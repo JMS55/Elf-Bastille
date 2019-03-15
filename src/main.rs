@@ -22,6 +22,8 @@ fn main() {
     world.register::<Sprite>();
     world.register::<Elf>();
     world.register::<Tree>();
+    world.register::<ItemStorage>();
+    world.register::<Item>();
 
     let mut elf_system = ElfSystem;
     let mut pathfinding_system = PathfindingSystem;
