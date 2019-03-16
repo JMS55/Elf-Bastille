@@ -1,4 +1,5 @@
 use crate::components::{Item, ItemStorage};
+use microprofile::scope;
 use rayon::iter::ParallelIterator;
 use specs::{ParJoin, ReadStorage, System, WriteStorage};
 
@@ -9,6 +10,8 @@ impl<'a> System<'a> for ItemStorageSystem {
 
     // Checks to make sure all entities inside an ItemStorage still exist and have an Item component
     fn run(&mut self, (mut item_storage_data, item_data): Self::SystemData) {
+        microprofile::scope!("systems", "item storage");
+
         (&mut item_storage_data)
             .par_join()
             .for_each(|item_storage| {

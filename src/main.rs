@@ -2,10 +2,10 @@ use components::*;
 use imgui::ImGui;
 use imgui_opengl_renderer::Renderer;
 use imgui_sdl2::ImguiSdl2;
-use microprofile::scope;
 use sdl2::event::Event;
 use sdl2::image::{LoadSurface, LoadTexture};
 use sdl2::keyboard::Keycode;
+use sdl2::mouse::MouseState;
 use sdl2::surface::Surface;
 use sdl2::video::GLProfile;
 use specs::{Builder, RunNow, World};
@@ -206,7 +206,7 @@ fn main() {
             .build();
     }
 
-    // Initialize SDL2
+    // Setup SDL2
     let sdl_context = sdl2::init().expect("Could not initialize sdl2");
     let video_subsystem = sdl_context
         .video()
@@ -240,7 +240,7 @@ fn main() {
     // Setup ImGui
     let mut imgui = ImGui::init();
     imgui.set_ini_filename(None);
-    let mut imgui_sdl = ImguiSdl2::new(&mut imgui);
+    let imgui_sdl = ImguiSdl2::new(&mut imgui);
     let imgui_renderer = Renderer::new(&mut imgui, |s| video_subsystem.gl_get_proc_address(s) as _);
 
     // Setup textures and render system
@@ -257,7 +257,12 @@ fn main() {
     let mut render_system = RenderSystem {
         tile_size: TILE_SIZE,
         textures,
+        should_render_gui: false,
         canvas,
+        mouse_state: MouseState::new(&event_pump),
+        imgui,
+        imgui_sdl,
+        imgui_renderer,
     };
 
     // Setup timer system
@@ -269,8 +274,10 @@ fn main() {
     'mainloop: loop {
         // Handle input
         for event in event_pump.poll_iter() {
-            imgui_sdl.handle_event(&mut imgui, &event);
-            if imgui_sdl.ignore_event(&event) {
+            render_system
+                .imgui_sdl
+                .handle_event(&mut render_system.imgui, &event);
+            if render_system.imgui_sdl.ignore_event(&event) {
                 continue;
             }
             match event {
@@ -289,40 +296,19 @@ fn main() {
         current_time = new_time;
         while accumulator >= dt {
             if !is_paused {
-                microprofile::scope!("systems", "item storage");
                 item_storage_system.run_now(&world.res);
-
-                microprofile::scope!("systems", "elf");
                 elf_system.run_now(&world.res);
                 world.maintain();
-
-                microprofile::scope!("systems", "pathfinding");
                 pathfinding_system.run_now(&world.res);
-
-                microprofile::scope!("systems", "movement");
                 movement_system.run_now(&world.res);
             }
             accumulator -= dt;
         }
 
         // Render
-        microprofile::scope!("rendering", "");
+        render_system.should_render_gui = is_paused;
+        render_system.mouse_state = event_pump.mouse_state();
         render_system.run_now(&world.res);
-
-        if is_paused {
-            // let ui = imgui_sdl.frame(
-            //     render_system.canvas.window(),
-            //     &mut imgui,
-            //     &event_pump.mouse_state(),
-            // );
-            // ui.show_demo_window(&mut true);
-            // unsafe {
-            //     gl::ClearColor(0.2, 0.2, 0.2, 1.0);
-            //     gl::Clear(gl::COLOR_BUFFER_BIT);
-            // }
-            // imgui_renderer.render(ui);
-            // render_system.canvas.window().gl_swap_window();
-        }
 
         microprofile::flip();
     }

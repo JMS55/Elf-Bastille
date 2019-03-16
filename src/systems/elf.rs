@@ -1,4 +1,5 @@
 use crate::components::{Elf, Movement, Position, Tree};
+use microprofile::scope;
 use specs::{Entities, Join, ReadStorage, System, WriteStorage};
 
 pub struct ElfSystem;
@@ -16,6 +17,8 @@ impl<'a> System<'a> for ElfSystem {
         &mut self,
         (elf_data, mut tree_data, position_data, mut movement_data, entities): Self::SystemData,
     ) {
+        microprofile::scope!("systems", "elf");
+
         for (_, elf_position, elf_movement) in
             (&elf_data, &position_data, &mut movement_data).join()
         {

@@ -1,4 +1,5 @@
 use crate::components::{Movement, Position};
+use microprofile::scope;
 use rayon::iter::ParallelIterator;
 use specs::{Join, ParJoin, ReadStorage, System, WriteStorage};
 use std::cmp::{Ord, Ordering};
@@ -11,6 +12,8 @@ impl<'a> System<'a> for PathfindingSystem {
 
     // A* pathfind in parallel to adjacent tile to target
     fn run(&mut self, (mut movement_data, position_data): Self::SystemData) {
+        microprofile::scope!("systems", "pathfinding");
+
         let obstacle_positions = (&position_data).join().collect::<HashSet<_>>();
         (&mut movement_data, &position_data)
             .par_join()

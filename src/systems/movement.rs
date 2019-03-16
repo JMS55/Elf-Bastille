@@ -1,4 +1,5 @@
 use crate::components::{Movement, Position};
+use microprofile::scope;
 use specs::{Join, System, WriteStorage};
 use std::collections::HashSet;
 
@@ -8,6 +9,8 @@ impl<'a> System<'a> for MovementSystem {
     type SystemData = (WriteStorage<'a, Position>, WriteStorage<'a, Movement>);
 
     fn run(&mut self, (mut position_data, mut movement_data): Self::SystemData) {
+        microprofile::scope!("systems", "movement");
+
         // Local copy of positions to use for obstacle detection, should be kept in sync when changing movement entity positions
         let mut obstacle_positions = (&position_data)
             .join()
