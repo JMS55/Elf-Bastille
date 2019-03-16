@@ -5,13 +5,13 @@ use sdl2::video::Window;
 use specs::{Join, ReadStorage, System, WriteStorage};
 use std::collections::HashMap;
 
-pub struct RenderSystem<'t> {
+pub struct RenderSystem<'r> {
     pub tile_size: u32,
-    pub textures: HashMap<&'static str, Texture<'t>>,
+    pub textures: HashMap<&'static str, Texture<'r>>,
     pub canvas: Canvas<Window>,
 }
 
-impl<'t, 's> System<'s> for RenderSystem<'t> {
+impl<'r, 's> System<'s> for RenderSystem<'r> {
     type SystemData = (ReadStorage<'s, Position>, WriteStorage<'s, Sprite>);
 
     fn run(&mut self, (position_data, sprite_data): Self::SystemData) {
