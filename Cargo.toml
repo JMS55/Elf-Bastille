@@ -8,3 +8,8 @@ sdl2 = { version = "0.32", features = ["image"] }
 specs = "0.14"
 specs-derive = "0.4"
 rayon = "1.0"
+imgui = "0.0"
+imgui-sdl2 = "0.5"
+imgui-opengl-renderer = "0.4"
+gl = "0.11"
+microprofile = "0.0"

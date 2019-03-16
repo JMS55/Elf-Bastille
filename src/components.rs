@@ -84,44 +84,25 @@ pub struct ItemStorage {
 
 impl ItemStorage {
     // Try inserting an item, returning the item back if it fails
-    pub fn try_insert(&self, item: Entity, item_data: &ReadStorage<Item>) -> Result<(), Entity> {
+    pub fn try_insert(
+        &self,
+        item: Entity,
+        item_data: &ReadStorage<Item>,
+        item_storage_data: &ReadStorage<ItemStorage>,
+    ) -> Result<(), Entity> {
         let mut suceeded = true;
 
         // Volume check
-        let stored_volume: u32 = self
-            .items
-            .iter()
-            .map(|entity| {
-                item_data
-                    .get(*entity)
-                    .expect("Entity did not have an Item component")
-                    .volume
-            })
-            .sum();
-        let item_volume = item_data
-            .get(item)
-            .expect("Entity did not have an Item component")
-            .volume;
+        let stored_volume = self.get_stored_volume(item_data, item_storage_data);
+        let item_volume = item_data.get(item).unwrap().volume;
         if stored_volume + item_volume > self.volume_limit {
             suceeded = false;
         }
 
         // Weight check
         if let Some(weight_limit) = self.weight_limit {
-            let stored_weight: u32 = self
-                .items
-                .iter()
-                .map(|entity| {
-                    item_data
-                        .get(*entity)
-                        .expect("Entity did not have an Item component")
-                        .weight
-                })
-                .sum();
-            let item_weight = item_data
-                .get(item)
-                .expect("Entity did not have an Item component")
-                .weight;
+            let stored_weight = self.get_stored_weight(item_data, item_storage_data);
+            let item_weight = item_data.get(item).unwrap().weight;
             if stored_weight + item_weight > weight_limit {
                 suceeded = false;
             }
@@ -131,6 +112,36 @@ impl ItemStorage {
             true => Ok(()),
             false => Err(item),
         }
+    }
+
+    pub fn get_stored_volume(
+        &self,
+        item_data: &ReadStorage<Item>,
+        item_storage_data: &ReadStorage<ItemStorage>,
+    ) -> u32 {
+        let mut total = 0;
+        for item in &self.items {
+            total += item_data.get(*item).unwrap().volume;
+            if let Some(item_storage) = item_storage_data.get(*item) {
+                total += item_storage.get_stored_volume(item_data, item_storage_data);
+            }
+        }
+        total
+    }
+
+    pub fn get_stored_weight(
+        &self,
+        item_data: &ReadStorage<Item>,
+        item_storage_data: &ReadStorage<ItemStorage>,
+    ) -> u32 {
+        let mut total = 0;
+        for item in &self.items {
+            total += item_data.get(*item).unwrap().weight;
+            if let Some(item_storage) = item_storage_data.get(*item) {
+                total += item_storage.get_stored_weight(item_data, item_storage_data);
+            }
+        }
+        total
     }
 }
 
