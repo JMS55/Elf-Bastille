@@ -60,7 +60,7 @@ pub struct Movement {
 
 #[derive(Component, Copy, Clone, Eq, PartialEq, Hash, Debug, Ord, PartialOrd)]
 #[storage(VecStorage)]
-pub struct Sprite {
+pub struct Displayable {
     pub name: &'static str,
 }
 

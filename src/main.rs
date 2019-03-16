@@ -5,7 +5,7 @@ use imgui_sdl2::ImguiSdl2;
 use sdl2::event::Event;
 use sdl2::image::{LoadSurface, LoadTexture};
 use sdl2::keyboard::Keycode;
-use sdl2::mouse::MouseState;
+use sdl2::mouse::{MouseButton, MouseState};
 use sdl2::surface::Surface;
 use sdl2::video::GLProfile;
 use specs::{Builder, RunNow, World};
@@ -14,6 +14,7 @@ use std::time::{Duration, Instant};
 use systems::*;
 
 mod components;
+mod inspector;
 mod systems;
 
 pub const WORLD_WIDTH: u32 = 20;
@@ -29,7 +30,7 @@ fn main() {
     let mut world = World::new();
     world.register::<Position>();
     world.register::<Movement>();
-    world.register::<Sprite>();
+    world.register::<Displayable>();
     world.register::<Elf>();
     world.register::<Tree>();
     world.register::<ItemStorage>();
@@ -56,7 +57,7 @@ fn main() {
                 volume_limit: 0,
                 weight_limit: Some(0),
             })
-            .with(Sprite { name: "elf" })
+            .with(Displayable { name: "elf" })
             .build();
         world
             .create_entity()
@@ -72,7 +73,7 @@ fn main() {
                 volume_limit: 0,
                 weight_limit: Some(0),
             })
-            .with(Sprite { name: "elf" })
+            .with(Displayable { name: "elf" })
             .build();
         world
             .create_entity()
@@ -88,7 +89,7 @@ fn main() {
                 volume_limit: 0,
                 weight_limit: Some(0),
             })
-            .with(Sprite { name: "elf" })
+            .with(Displayable { name: "elf" })
             .build();
         world
             .create_entity()
@@ -104,7 +105,7 @@ fn main() {
                 volume_limit: 0,
                 weight_limit: Some(0),
             })
-            .with(Sprite { name: "elf" })
+            .with(Displayable { name: "elf" })
             .build();
         world
             .create_entity()
@@ -120,89 +121,115 @@ fn main() {
                 volume_limit: 0,
                 weight_limit: Some(0),
             })
-            .with(Sprite { name: "elf" })
+            .with(Displayable { name: "elf" })
+            .build();
+        let item1 = world
+            .create_entity()
+            .with(Item {
+                volume: 10,
+                weight: 5,
+            })
+            .build();
+        let item2 = world
+            .create_entity()
+            .with(Item {
+                volume: 20,
+                weight: 5,
+            })
+            .build();
+        let item3 = world
+            .create_entity()
+            .with(ItemStorage {
+                items: vec![item2],
+                volume_limit: 30,
+                weight_limit: None,
+            })
+            .with(Item {
+                volume: 10,
+                weight: 5,
+            })
             .build();
         world
             .create_entity()
             .with(ItemStorage {
-                items: Vec::new(),
-                volume_limit: 0,
+                items: vec![item1, item3],
+                volume_limit: 50,
                 weight_limit: None,
             })
             .with(Position { x: 15, y: 9 })
-            .with(Sprite { name: "crate" })
+            .with(Displayable { name: "crate" })
             .build();
         world
             .create_entity()
             .with(Tree { durability: 15 })
             .with(Position { x: 4, y: 5 })
-            .with(Sprite { name: "tree" })
+            .with(Displayable { name: "tree" })
             .build();
         world
             .create_entity()
             .with(Tree { durability: 10 })
             .with(Position { x: 17, y: 9 })
-            .with(Sprite { name: "tree" })
+            .with(Displayable { name: "tree" })
             .build();
         world
             .create_entity()
             .with(Tree { durability: 6 })
             .with(Position { x: 12, y: 17 })
-            .with(Sprite { name: "tree" })
+            .with(Displayable { name: "tree" })
             .build();
         world
             .create_entity()
             .with(Tree { durability: 8 })
             .with(Position { x: 7, y: 16 })
-            .with(Sprite { name: "tree" })
+            .with(Displayable { name: "tree" })
             .build();
         world
             .create_entity()
             .with(Tree { durability: 8 })
             .with(Position { x: 19, y: 0 })
-            .with(Sprite { name: "tree" })
+            .with(Displayable { name: "tree" })
             .build();
         for x in 8..=19 {
             world
                 .create_entity()
                 .with(Position { x, y: 7 })
-                .with(Sprite { name: "wall" })
+                .with(Displayable { name: "wall" })
                 .build();
         }
         world
             .create_entity()
             .with(Position { x: 8, y: 8 })
-            .with(Sprite { name: "wall" })
+            .with(Displayable { name: "wall" })
             .build();
         world
             .create_entity()
             .with(Position { x: 8, y: 9 })
-            .with(Sprite { name: "wall" })
+            .with(Displayable { name: "wall" })
             .build();
         world
             .create_entity()
             .with(Position { x: 8, y: 10 })
-            .with(Sprite { name: "wall" })
+            .with(Displayable { name: "wall" })
             .build();
         world
             .create_entity()
             .with(Position { x: 8, y: 11 })
-            .with(Sprite { name: "wall" })
+            .with(Displayable { name: "wall" })
             .build();
         world
             .create_entity()
             .with(Position { x: 8, y: 12 })
-            .with(Sprite { name: "wall" })
+            .with(Displayable { name: "wall" })
             .build();
         world
             .create_entity()
             .with(Position { x: 8, y: 13 })
-            .with(Sprite { name: "wall" })
+            .with(Displayable { name: "wall" })
             .build();
         world
             .create_entity()
             .with(Position { x: 8, y: 14 })
-            .with(Sprite { name: "wall" })
+            .with(Displayable { name: "wall" })
             .build();
     }
 
@@ -249,15 +276,17 @@ fn main() {
     let tree_texture = texture_creator.load_texture("tree.png").unwrap();
     let wall_texture = texture_creator.load_texture("wall.png").unwrap();
     let crate_texture = texture_creator.load_texture("crate.png").unwrap();
+    let selected_texture = texture_creator.load_texture("selected.png").unwrap();
     let mut textures = HashMap::new();
     textures.insert("elf", elf_texture);
     textures.insert("tree", tree_texture);
     textures.insert("wall", wall_texture);
     textures.insert("crate", crate_texture);
+    textures.insert("selected", selected_texture);
     let mut render_system = RenderSystem {
+        selected_position: None,
         tile_size: TILE_SIZE,
         textures,
-        should_render_gui: false,
         canvas,
         mouse_state: MouseState::new(&event_pump),
         imgui,
@@ -285,7 +314,31 @@ fn main() {
                 Event::KeyDown {
                     keycode: Some(Keycode::P),
                     ..
-                } => is_paused = !is_paused,
+                } => {
+                    if is_paused {
+                        render_system.selected_position = None;
+                    }
+                    is_paused = !is_paused;
+                }
+                Event::MouseButtonDown {
+                    mouse_btn: MouseButton::Left,
+                    x,
+                    y,
+                    ..
+                } if is_paused => {
+                    let new_position = Position {
+                        x: x as u32 / TILE_SIZE,
+                        y: y as u32 / TILE_SIZE,
+                    };
+                    match render_system.selected_position {
+                        Some(selected_position) if selected_position == new_position => {
+                            render_system.selected_position = None;
+                        }
+                        _ => {
+                            render_system.selected_position = Some(new_position);
+                        }
+                    }
+                }
                 _ => {}
             }
         }
@@ -306,7 +359,6 @@ fn main() {
         }
 
         // Render
-        render_system.should_render_gui = is_paused;
         render_system.mouse_state = event_pump.mouse_state();
         render_system.run_now(&world.res);
 
