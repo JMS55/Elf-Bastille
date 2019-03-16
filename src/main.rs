@@ -22,8 +22,8 @@ const TILE_SIZE: u32 = 32;
 
 fn main() {
     // Setup profiling
-    microprofile::init();
-    microprofile::set_enable_all_groups(true);
+    microprofile::init!();
+    microprofile::set_enable_all_groups!(true);
 
     // Create the world
     let mut world = World::new();
@@ -310,9 +310,9 @@ fn main() {
         render_system.mouse_state = event_pump.mouse_state();
         render_system.run_now(&world.res);
 
-        microprofile::flip();
+        microprofile::flip!();
     }
 
-    microprofile::dump_file_immediately("profile.html", "");
-    microprofile::shutdown();
+    microprofile::dump_file_immediately!("profile.html", "");
+    microprofile::shutdown!();
 }
