@@ -1,5 +1,4 @@
-use crate::components::{Displayable, Elf, ItemStorage, Movement, Position, Tree};
-use crate::inspector::Inspectable;
+use crate::components::{Displayable, Elf, Item, ItemStorage, Movement, Position, Tree};
 use crate::{TILE_SIZE, WORLD_HEIGHT, WORLD_WIDTH};
 use imgui::{im_str, ImGui, ImGuiCond};
 use imgui_opengl_renderer::Renderer;
@@ -32,6 +31,7 @@ impl<'r, 's> System<'s> for RenderSystem<'r> {
         ReadStorage<'s, Position>,
         ReadStorage<'s, Movement>,
         ReadStorage<'s, ItemStorage>,
+        ReadStorage<'s, Item>,
     );
 
     fn run(
@@ -44,6 +44,7 @@ impl<'r, 's> System<'s> for RenderSystem<'r> {
             position_data,
             movement_data,
             item_storage_data,
+            item_data,
         ): Self::SystemData,
     ) {
         self.canvas.clear();
@@ -111,7 +112,7 @@ impl<'r, 's> System<'s> for RenderSystem<'r> {
                             movement.create_ui(&inspector);
                         }
                         if let Some(item_storage) = &item_storage_data.get(entity) {
-                            // item_storage.create_ui(&inspector);
+                            item_storage.create_ui(&inspector, &item_data, &item_storage_data);
                         }
                     }
                 });
