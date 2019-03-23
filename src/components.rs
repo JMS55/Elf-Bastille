@@ -62,6 +62,7 @@ pub struct Movement {
 #[storage(VecStorage)]
 pub struct Displayable {
     pub name: &'static str,
+    pub texture_atlas_index: u32,
 }
 
 #[derive(Component, Copy, Clone, Eq, PartialEq, Hash, Debug, Ord, PartialOrd, Default)]

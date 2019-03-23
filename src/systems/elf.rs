@@ -31,7 +31,9 @@ impl<'a> System<'a> for ElfSystem {
             {
                 tree.durability -= 1;
                 if tree.durability == 0 {
-                    entities.delete(entity).unwrap();
+                    entities
+                        .delete(entity)
+                        .expect("Unable to mark tree for deletion");
                 }
             }
             // If not adjacent to tree set target as closet alive tree (ignoring obstacles)

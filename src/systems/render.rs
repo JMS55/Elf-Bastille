@@ -1,37 +1,121 @@
 use crate::components::{Displayable, Elf, Item, ItemStorage, Movement, Position, Tree};
-use crate::{TILE_SIZE, WORLD_HEIGHT, WORLD_WIDTH};
-use imgui::{im_str, ImGui, ImGuiCond};
-use imgui_opengl_renderer::Renderer;
-use imgui_sdl2::ImguiSdl2;
+use crate::{NUMBER_OF_TEXTURES, WORLD_HEIGHT, WORLD_WIDTH};
+use glium::texture::{RawImage2d, SrgbTexture2d};
+use glium::uniforms::{MagnifySamplerFilter, Sampler};
+use glium::{
+    implement_vertex, index::PrimitiveType, uniform, Blend, Display, DrawParameters, IndexBuffer,
+    Program, Surface, VertexBuffer,
+};
 use microprofile::scope;
-use sdl2::mouse::MouseState;
-use sdl2::rect::Rect;
-use sdl2::render::{Canvas, Texture};
-use sdl2::video::Window;
 use specs::{Entities, Join, ReadStorage, System};
-use std::collections::HashMap;
+use std::io::Cursor;
 
-pub struct RenderSystem<'r> {
-    pub selected_position: Option<Position>,
-    pub tile_size: u32,
-    pub textures: HashMap<&'static str, Texture<'r>>,
-    pub canvas: Canvas<Window>,
-    pub mouse_state: MouseState,
-    pub imgui: ImGui,
-    pub imgui_sdl: ImguiSdl2,
-    pub imgui_renderer: Renderer,
+pub struct RenderSystem {
+    display: Display,
+    texture_atlas: SrgbTexture2d,
+    program: Program,
+    template_vertices: VertexBuffer<TemplateVertex>,
+    indices: IndexBuffer<u8>,
 }
 
-impl<'r, 's> System<'s> for RenderSystem<'r> {
+impl RenderSystem {
+    pub fn new(display: Display) -> Self {
+        let image = image::load(
+            Cursor::new(&include_bytes!("../../texture_atlas.png")[..]),
+            image::PNG,
+        )
+        .expect("Failed to load texture atlas")
+        .to_rgba();
+        let image_dimensions = image.dimensions();
+        let image = RawImage2d::from_raw_rgba_reversed(&image.into_raw(), image_dimensions);
+        let texture_atlas =
+            SrgbTexture2d::new(&display, image).expect("Failed to create texture atlas texture");
+
+        let vertex_shader_src = format!(
+            r#"
+            #version 130
+
+            in vec2 position;
+            in vec2 texture;
+            in vec2 tile_position;
+            in float texture_atlas_index;
+            out vec2 v_texture;
+
+            void main() {{
+                v_texture = texture;
+                v_texture.x += texture_atlas_index / {};
+                vec2 position_offset = tile_position;
+                position_offset.x = 2.0 * position_offset.x / {} - 1.0;
+                position_offset.y = -2.0 * position_offset.y / {} + 1.0;
+                gl_Position = vec4(position + position_offset, 0.0, 1.0);
+            }}
+        "#,
+            NUMBER_OF_TEXTURES as f32, WORLD_WIDTH as f32, WORLD_HEIGHT as f32
+        );
+        let fragment_shader_src = r#"
+            #version 130
+
+            uniform sampler2D texture_atlas;
+            in vec2 v_texture;
+            out vec4 pixel;
+
+            void main() {
+                pixel = texture(texture_atlas, v_texture);
+            }
+        "#;
+        let program = Program::from_source(&display, &vertex_shader_src, fragment_shader_src, None)
+            .expect("Failed to create program");
+
+        let template_vertices = VertexBuffer::new(
+            &display,
+            &[
+                TemplateVertex {
+                    position: [0.0, 0.0],
+                    texture: [0.0, 1.0],
+                },
+                TemplateVertex {
+                    position: [2.0 / WORLD_WIDTH as f32, 0.0],
+                    texture: [1.0 / NUMBER_OF_TEXTURES as f32, 1.0],
+                },
+                TemplateVertex {
+                    position: [0.0, -2.0 / WORLD_HEIGHT as f32],
+                    texture: [0.0, 0.0],
+                },
+                TemplateVertex {
+                    position: [2.0 / WORLD_WIDTH as f32, -2.0 / WORLD_HEIGHT as f32],
+                    texture: [1.0 / NUMBER_OF_TEXTURES as f32, 0.0],
+                },
+            ],
+        )
+        .expect("Failed to create template vertex buffer");
+
+        let indices = IndexBuffer::new(
+            &display,
+            PrimitiveType::TrianglesList,
+            &[0u8, 1, 2, 1, 2, 3],
+        )
+        .expect("Failed to create template index buffer");
+
+        Self {
+            display,
+            texture_atlas,
+            program,
+            template_vertices,
+            indices,
+        }
+    }
+}
+
+impl<'a> System<'a> for RenderSystem {
     type SystemData = (
-        Entities<'s>,
-        ReadStorage<'s, Displayable>,
-        ReadStorage<'s, Elf>,
-        ReadStorage<'s, Tree>,
-        ReadStorage<'s, Position>,
-        ReadStorage<'s, Movement>,
-        ReadStorage<'s, ItemStorage>,
-        ReadStorage<'s, Item>,
+        Entities<'a>,
+        ReadStorage<'a, Displayable>,
+        ReadStorage<'a, Elf>,
+        ReadStorage<'a, Tree>,
+        ReadStorage<'a, Position>,
+        ReadStorage<'a, Movement>,
+        ReadStorage<'a, ItemStorage>,
+        ReadStorage<'a, Item>,
     );
 
     fn run(
@@ -47,78 +131,63 @@ impl<'r, 's> System<'s> for RenderSystem<'r> {
             item_data,
         ): Self::SystemData,
     ) {
-        self.canvas.clear();
+        let mut draw_target = self.display.draw();
+        draw_target.clear_color_srgb(0.50, 0.25, 0.12, 1.0);
 
         // Render game
         microprofile::scope!("rendering", "game");
-        for (position, displayable) in (&position_data, &displayable_data).join() {
-            self.canvas
-                .copy(
-                    &self.textures[displayable.name],
-                    None,
-                    Some(Rect::new(
-                        (position.x * self.tile_size) as i32,
-                        (position.y * self.tile_size) as i32,
-                        self.tile_size,
-                        self.tile_size,
-                    )),
-                )
-                .unwrap();
-        }
+        let instance_data = (&position_data, &displayable_data)
+            .join()
+            .map(|(position, displayable)| InstanceData {
+                tile_position: [position.x as f32, position.y as f32],
+                texture_atlas_index: displayable.texture_atlas_index as f32,
+            })
+            .collect::<Vec<_>>();
+        let instances = VertexBuffer::new(&self.display, &instance_data)
+            .expect("Failed to create vertex buffer");
+
+        let draw_parameters = DrawParameters {
+            blend: Blend::alpha_blending(),
+            multisampling: false,
+            dithering: false,
+            ..Default::default()
+        };
+        draw_target
+            .draw(
+                (
+                    &self.template_vertices,
+                    instances
+                        .per_instance()
+                        .expect("Draw call failed: Instancing not supported"),
+                ),
+                &self.indices,
+                &self.program,
+                &uniform!(texture_atlas: Sampler::new(&self.texture_atlas)
+                        .magnify_filter(MagnifySamplerFilter::Nearest)),
+                &draw_parameters,
+            )
+            .expect("Draw call failed");
 
         // Render gui
         microprofile::scope!("rendering", "gui");
-        if let Some(selected_position) = self.selected_position {
-            self.canvas
-                .copy(
-                    &self.textures["selected"],
-                    None,
-                    Some(Rect::new(
-                        (selected_position.x * self.tile_size) as i32,
-                        (selected_position.y * self.tile_size) as i32,
-                        self.tile_size,
-                        self.tile_size,
-                    )),
-                )
-                .unwrap();
 
-            let inspector =
-                self.imgui_sdl
-                    .frame(&self.canvas.window(), &mut self.imgui, &self.mouse_state);
-            inspector
-                .window(im_str!("Inspector"))
-                .size(
-                    (
-                        (WORLD_WIDTH * TILE_SIZE) as f32 / 2.0,
-                        (WORLD_HEIGHT * TILE_SIZE) as f32 / 2.0,
-                    ),
-                    ImGuiCond::FirstUseEver,
-                )
-                .build(|| {
-                    if let Some((entity, position, displayable)) =
-                        (&entities, &position_data, &displayable_data)
-                            .join()
-                            .find(|(_, position, _)| position == &&selected_position)
-                    {
-                        displayable.create_ui(&inspector);
-                        if let Some(elf) = &elf_data.get(entity) {
-                            elf.create_ui(&inspector);
-                        }
-                        if let Some(tree) = &tree_data.get(entity) {
-                            tree.create_ui(&inspector);
-                        }
-                        position.create_ui(&inspector);
-                        if let Some(movement) = &movement_data.get(entity) {
-                            movement.create_ui(&inspector);
-                        }
-                        if let Some(item_storage) = &item_storage_data.get(entity) {
-                            item_storage.create_ui(&inspector, &item_data, &item_storage_data);
-                        }
-                    }
-                });
-            self.imgui_renderer.render(inspector);
-        }
-
-        self.canvas.window().gl_swap_window();
+        draw_target
+            .finish()
+            .expect("Could not swap display buffers");
     }
 }
+
+#[derive(Copy, Clone)]
+struct TemplateVertex {
+    position: [f32; 2],
+    texture: [f32; 2],
+}
+
+#[derive(Copy, Clone)]
+struct InstanceData {
+    tile_position: [f32; 2],
+    texture_atlas_index: f32,
+}
+
+implement_vertex!(TemplateVertex, position, texture);
+implement_vertex!(InstanceData, tile_position, texture_atlas_index);

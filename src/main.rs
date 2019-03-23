@@ -1,30 +1,39 @@
 use components::*;
-use imgui::ImGui;
-use imgui_opengl_renderer::Renderer;
-use imgui_sdl2::ImguiSdl2;
-use sdl2::event::Event;
-use sdl2::image::{LoadSurface, LoadTexture};
-use sdl2::keyboard::Keycode;
-use sdl2::mouse::{MouseButton, MouseState};
-use sdl2::surface::Surface;
-use sdl2::video::GLProfile;
+use glium::glutin::{
+    dpi::LogicalSize, ContextBuilder, ElementState, Event, EventsLoop, VirtualKeyCode,
+    WindowBuilder, WindowEvent,
+};
+use glium::Display;
 use specs::{Builder, RunNow, World};
-use std::collections::HashMap;
 use std::time::{Duration, Instant};
 use systems::*;
 
 mod components;
-mod inspector;
+// mod inspector;
 mod systems;
 
 pub const WORLD_WIDTH: u32 = 20;
 pub const WORLD_HEIGHT: u32 = 20;
-const TILE_SIZE: u32 = 32;
+pub const NUMBER_OF_TEXTURES: u32 = 5;
+const TEXTURE_SIZE: u32 = 16;
+const TEXTURE_SCALE_FACTOR: u32 = 2;
 
 fn main() {
     // Setup profiling
     microprofile::init!();
     microprofile::set_enable_all_groups!(true);
+
+    // Setup windowing
+    let mut event_loop = EventsLoop::new();
+    let window = WindowBuilder::new()
+        .with_dimensions(LogicalSize::new(
+            (WORLD_WIDTH * TEXTURE_SIZE * TEXTURE_SCALE_FACTOR) as f64,
+            (WORLD_HEIGHT * TEXTURE_SIZE * TEXTURE_SCALE_FACTOR) as f64,
+        ))
+        .with_resizable(false)
+        .with_title("Elf Bastille");
+    let context = ContextBuilder::new().with_vsync(true).with_srgb(true);
+    let display = Display::new(window, context, &event_loop).expect("Could not create Display");
 
     // Create the world
     let mut world = World::new();
@@ -36,10 +45,12 @@ fn main() {
     world.register::<ItemStorage>();
     world.register::<Item>();
 
+    // Create systems
     let mut item_storage_system = ItemStorageSystem;
     let mut elf_system = ElfSystem;
     let mut pathfinding_system = PathfindingSystem;
     let mut movement_system = MovementSystem;
+    let mut render_system = RenderSystem::new(display);
 
     // Create entities
     {
@@ -57,7 +68,10 @@ fn main() {
                 volume_limit: 0,
                 weight_limit: Some(0),
             })
-            .with(Displayable { name: "elf" })
+            .with(Displayable {
+                name: "Eve",
+                texture_atlas_index: 0,
+            })
             .build();
         world
             .create_entity()
@@ -73,7 +87,10 @@ fn main() {
                 volume_limit: 0,
                 weight_limit: Some(0),
             })
-            .with(Displayable { name: "elf" })
+            .with(Displayable {
+                name: "Jeff",
+                texture_atlas_index: 0,
+            })
             .build();
         world
             .create_entity()
@@ -89,7 +106,10 @@ fn main() {
                 volume_limit: 0,
                 weight_limit: Some(0),
             })
-            .with(Displayable { name: "elf" })
+            .with(Displayable {
+                name: "Jane",
+                texture_atlas_index: 0,
+            })
             .build();
         world
             .create_entity()
@@ -105,7 +125,10 @@ fn main() {
                 volume_limit: 0,
                 weight_limit: Some(0),
             })
-            .with(Displayable { name: "elf" })
+            .with(Displayable {
+                name: "Alice",
+                texture_atlas_index: 0,
+            })
             .build();
         world
             .create_entity()
@@ -121,7 +144,10 @@ fn main() {
                 volume_limit: 0,
                 weight_limit: Some(0),
             })
-            .with(Displayable { name: "elf" })
+            .with(Displayable {
+                name: "Bob",
+                texture_atlas_index: 0,
+            })
             .build();
         let item1 = world
             .create_entity()
@@ -157,197 +183,155 @@ fn main() {
                 weight_limit: None,
             })
             .with(Position { x: 15, y: 9 })
-            .with(Displayable { name: "crate" })
+            .with(Displayable {
+                name: "Crate",
+                texture_atlas_index: 3,
+            })
             .build();
         world
             .create_entity()
             .with(Tree { durability: 15 })
             .with(Position { x: 4, y: 5 })
-            .with(Displayable { name: "tree" })
+            .with(Displayable {
+                name: "Tree",
+                texture_atlas_index: 1,
+            })
             .build();
         world
             .create_entity()
             .with(Tree { durability: 10 })
             .with(Position { x: 17, y: 9 })
-            .with(Displayable { name: "tree" })
+            .with(Displayable {
+                name: "Tree",
+                texture_atlas_index: 1,
+            })
             .build();
         world
             .create_entity()
             .with(Tree { durability: 6 })
             .with(Position { x: 12, y: 17 })
-            .with(Displayable { name: "tree" })
+            .with(Displayable {
+                name: "Tree",
+                texture_atlas_index: 1,
+            })
             .build();
         world
             .create_entity()
             .with(Tree { durability: 8 })
             .with(Position { x: 7, y: 16 })
-            .with(Displayable { name: "tree" })
+            .with(Displayable {
+                name: "Tree",
+                texture_atlas_index: 1,
+            })
             .build();
         world
             .create_entity()
             .with(Tree { durability: 8 })
             .with(Position { x: 19, y: 0 })
-            .with(Displayable { name: "tree" })
+            .with(Displayable {
+                name: "Tree",
+                texture_atlas_index: 1,
+            })
             .build();
         for x in 8..=19 {
             world
                 .create_entity()
                 .with(Position { x, y: 7 })
-                .with(Displayable { name: "wall" })
+                .with(Displayable {
+                    name: "Wall",
+                    texture_atlas_index: 2,
+                })
                 .build();
         }
         world
             .create_entity()
             .with(Position { x: 8, y: 8 })
-            .with(Displayable { name: "wall" })
+            .with(Displayable {
+                name: "Wall",
+                texture_atlas_index: 2,
+            })
             .build();
         world
             .create_entity()
             .with(Position { x: 8, y: 9 })
-            .with(Displayable { name: "wall" })
+            .with(Displayable {
+                name: "Wall",
+                texture_atlas_index: 2,
+            })
             .build();
         world
             .create_entity()
             .with(Position { x: 8, y: 10 })
-            .with(Displayable { name: "wall" })
+            .with(Displayable {
+                name: "Wall",
+                texture_atlas_index: 2,
+            })
             .build();
         world
             .create_entity()
             .with(Position { x: 8, y: 11 })
-            .with(Displayable { name: "wall" })
+            .with(Displayable {
+                name: "Wall",
+                texture_atlas_index: 2,
+            })
             .build();
         world
             .create_entity()
             .with(Position { x: 8, y: 12 })
-            .with(Displayable { name: "wall" })
+            .with(Displayable {
+                name: "Wall",
+                texture_atlas_index: 2,
+            })
             .build();
         world
             .create_entity()
             .with(Position { x: 8, y: 13 })
-            .with(Displayable { name: "wall" })
+            .with(Displayable {
+                name: "Wall",
+                texture_atlas_index: 2,
+            })
             .build();
         world
             .create_entity()
             .with(Position { x: 8, y: 14 })
-            .with(Displayable { name: "wall" })
+            .with(Displayable {
+                name: "Wall",
+                texture_atlas_index: 2,
+            })
             .build();
     }
 
-    // Setup SDL2
-    let sdl_context = sdl2::init().expect("Could not initialize sdl2");
-    let video_subsystem = sdl_context
-        .video()
-        .expect("Could not initialize sdl2 video subsystem");
-    let gl_attr = video_subsystem.gl_attr();
-    gl_attr.set_context_profile(GLProfile::Core);
-    gl_attr.set_context_version(3, 0);
-    let mut window = video_subsystem
-        .window(
-            "Elf Bastille",
-            WORLD_WIDTH * TILE_SIZE,
-            WORLD_HEIGHT * TILE_SIZE,
-        )
-        .opengl()
-        .allow_highdpi()
-        .build()
-        .expect("Could not create window");
-    let icon = Surface::from_file("elf.png").unwrap();
-    window.set_icon(icon);
-    let _gl_context = window
-        .gl_create_context()
-        .expect("Could not create GL context");
-    gl::load_with(|s| video_subsystem.gl_get_proc_address(s) as _);
-    let mut canvas = window
-        .into_canvas()
-        .build()
-        .expect("Could not create canvas");
-    canvas.set_draw_color((130, 60, 30, 255));
-    let mut event_pump = sdl_context.event_pump().unwrap();
-
-    // Setup ImGui
-    let mut imgui = ImGui::init();
-    imgui.set_ini_filename(None);
-    let imgui_sdl = ImguiSdl2::new(&mut imgui);
-    let imgui_renderer = Renderer::new(&mut imgui, |s| video_subsystem.gl_get_proc_address(s) as _);
-
-    // Setup textures and render system
-    let texture_creator = canvas.texture_creator();
-    let elf_texture = texture_creator.load_texture("elf.png").unwrap();
-    let tree_texture = texture_creator.load_texture("tree.png").unwrap();
-    let wall_texture = texture_creator.load_texture("wall.png").unwrap();
-    let crate_texture = texture_creator.load_texture("crate.png").unwrap();
-    let selected_texture = texture_creator.load_texture("selected.png").unwrap();
-    let mut textures = HashMap::new();
-    textures.insert("elf", elf_texture);
-    textures.insert("tree", tree_texture);
-    textures.insert("wall", wall_texture);
-    textures.insert("crate", crate_texture);
-    textures.insert("selected", selected_texture);
-    let mut render_system = RenderSystem {
-        selected_position: None,
-        tile_size: TILE_SIZE,
-        textures,
-        canvas,
-        mouse_state: MouseState::new(&event_pump),
-        imgui,
-        imgui_sdl,
-        imgui_renderer,
-    };
-
-    // Setup timer system
-    let dt = Duration::from_millis(300);
+    // Main loop
+    let delta_time = Duration::from_millis(300);
     let mut current_time = Instant::now();
     let mut accumulator = Duration::from_secs(0);
-
     let mut is_paused = false;
-    'mainloop: loop {
-        // Handle input
-        for event in event_pump.poll_iter() {
-            render_system
-                .imgui_sdl
-                .handle_event(&mut render_system.imgui, &event);
-            if render_system.imgui_sdl.ignore_event(&event) {
-                continue;
-            }
-            match event {
-                Event::Quit { .. } => break 'mainloop,
-                Event::KeyDown {
-                    keycode: Some(Keycode::P),
-                    ..
-                } => {
-                    if is_paused {
-                        render_system.selected_position = None;
-                    }
-                    is_paused = !is_paused;
-                }
-                Event::MouseButtonDown {
-                    mouse_btn: MouseButton::Left,
-                    x,
-                    y,
-                    ..
-                } if is_paused => {
-                    let new_position = Position {
-                        x: x as u32 / TILE_SIZE,
-                        y: y as u32 / TILE_SIZE,
-                    };
-                    match render_system.selected_position {
-                        Some(selected_position) if selected_position == new_position => {
-                            render_system.selected_position = None;
-                        }
-                        _ => {
-                            render_system.selected_position = Some(new_position);
+    let mut should_close = false;
+    while !should_close {
+        // Poll events
+        event_loop.poll_events(|event| match event {
+            Event::WindowEvent { event, .. } => match event {
+                WindowEvent::CloseRequested => should_close = true,
+                WindowEvent::KeyboardInput { input, .. } => {
+                    if input.state == ElementState::Pressed {
+                        match input.virtual_keycode {
+                            Some(VirtualKeyCode::P) => {
+                                is_paused = !is_paused;
+                            }
+                            _ => {}
                         }
                     }
                 }
                 _ => {}
-            }
-        }
+            },
+            _ => {}
+        });
 
         // Update based on timer
         let new_time = Instant::now();
         accumulator += new_time - current_time;
         current_time = new_time;
-        while accumulator >= dt {
+        while accumulator >= delta_time {
             if !is_paused {
                 item_storage_system.run_now(&world.res);
                 elf_system.run_now(&world.res);
@@ -355,11 +339,10 @@ fn main() {
                 pathfinding_system.run_now(&world.res);
                 movement_system.run_now(&world.res);
             }
-            accumulator -= dt;
+            accumulator -= delta_time;
         }
 
         // Render
-        render_system.mouse_state = event_pump.mouse_state();
         render_system.run_now(&world.res);
 
         microprofile::flip!();
