@@ -331,6 +331,8 @@ fn main() {
                             Some(VirtualKeyCode::P) => {
                                 if is_paused {
                                     render_system.selected_tile = None;
+                                    // TODO: Replace this unsafe block with the new methods when imgui-rs 0.1 comes out - render_system.imgui.io().want_capture_mouse
+                                    unsafe { (*imgui::sys::igGetIO()).want_capture_mouse = false };
                                 }
                                 is_paused = !is_paused;
                             }
