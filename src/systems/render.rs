@@ -1,17 +1,22 @@
 use crate::components::{Displayable, Elf, Item, ItemStorage, Movement, Position, Tree};
-use crate::{NUMBER_OF_TEXTURES, WORLD_HEIGHT, WORLD_WIDTH};
+use crate::{NUMBER_OF_TEXTURES, TEXTURE_SCALE_FACTOR, TEXTURE_SIZE, WORLD_HEIGHT, WORLD_WIDTH};
 use glium::texture::{RawImage2d, SrgbTexture2d};
 use glium::uniforms::{MagnifySamplerFilter, Sampler};
 use glium::{
     implement_vertex, index::PrimitiveType, uniform, Blend, Display, DrawParameters, IndexBuffer,
     Program, Surface, VertexBuffer,
 };
+use imgui::{im_str, FrameSize, ImGui, ImGuiCond};
+use imgui_glium_renderer::Renderer;
 use microprofile::scope;
 use specs::{Entities, Join, ReadStorage, System};
 use std::io::Cursor;
 
 pub struct RenderSystem {
-    display: Display,
+    pub selected_tile: Option<Position>,
+    pub display: Display,
+    pub imgui: ImGui,
+    imgui_renderer: Renderer,
     texture_atlas: SrgbTexture2d,
     program: Program,
     template_vertices: VertexBuffer<TemplateVertex>,
@@ -20,6 +25,13 @@ pub struct RenderSystem {
 
 impl RenderSystem {
     pub fn new(display: Display) -> Self {
+        let mut imgui = ImGui::init();
+        imgui.set_ini_filename(None);
+        imgui_winit_support::configure_keys(&mut imgui);
+
+        let imgui_renderer =
+            Renderer::init(&mut imgui, &display).expect("Failed to create ImGui renderer");
+
         let image = image::load(
             Cursor::new(&include_bytes!("../../texture_atlas.png")[..]),
             image::PNG,
@@ -97,7 +109,10 @@ impl RenderSystem {
         .expect("Failed to create template index buffer");
 
         Self {
+            selected_tile: None,
             display,
+            imgui,
+            imgui_renderer,
             texture_atlas,
             program,
             template_vertices,
@@ -136,13 +151,19 @@ impl<'a> System<'a> for RenderSystem {
 
         // Render game
         microprofile::scope!("rendering", "game");
-        let instance_data = (&position_data, &displayable_data)
+        let mut instance_data = (&position_data, &displayable_data)
             .join()
             .map(|(position, displayable)| InstanceData {
                 tile_position: [position.x as f32, position.y as f32],
                 texture_atlas_index: displayable.texture_atlas_index as f32,
             })
             .collect::<Vec<_>>();
+        if let Some(selected_tile) = self.selected_tile {
+            instance_data.push(InstanceData {
+                tile_position: [selected_tile.x as f32, selected_tile.y as f32],
+                texture_atlas_index: 4.0,
+            });
+        }
         let instances = VertexBuffer::new(&self.display, &instance_data)
             .expect("Failed to create vertex buffer");
 
@@ -166,10 +187,62 @@ impl<'a> System<'a> for RenderSystem {
                         .magnify_filter(MagnifySamplerFilter::Nearest)),
                 &draw_parameters,
             )
-            .expect("Draw call failed");
+            .expect("Draw call f9iled");
 
         // Render gui
-        microprofile::scope!("rendering", "gui");
+        if let Some(selected_tile) = self.selected_tile {
+            microprofile::scope!("rendering", "gui");
+            let inspector = self.imgui.frame(
+                FrameSize::new(
+                    (WORLD_WIDTH * TEXTURE_SIZE * TEXTURE_SCALE_FACTOR) as f64,
+                    (WORLD_HEIGHT * TEXTURE_SIZE * TEXTURE_SCALE_FACTOR) as f64,
+                    self.display.gl_window().get_hidpi_factor(),
+                ),
+                1.0 / 60.0, // TODO: Proper delta time
+            );
+            inspector
+                .window(im_str!("Inspector"))
+                .size(
+                    (
+                        (WORLD_WIDTH * TEXTURE_SIZE * TEXTURE_SCALE_FACTOR) as f32 / 1.5,
+                        (WORLD_HEIGHT * TEXTURE_SIZE * TEXTURE_SCALE_FACTOR) as f32 / 2.0,
+                    ),
+                    ImGuiCond::FirstUseEver,
+                )
+                .build(|| {
+                    if let Some((entity, position, displayable)) =
+                        (&entities, &position_data, &displayable_data)
+                            .join()
+                            .find(|(_, position, _)| position == &&selected_tile)
+                    {
+                        displayable.create_ui(&inspector);
+                        if let Some(elf) = &elf_data.get(entity) {
+                            elf.create_ui(&inspector);
+                        }
+                        if let Some(tree) = &tree_data.get(entity) {
+                            tree.create_ui(&inspector);
+                        }
+                        position.create_ui(&inspector);
+                        if let Some(movement) = &movement_data.get(entity) {
+                            movement.create_ui(&inspector);
+                        }
+                        if let Some(item) = &item_data.get(entity) {
+                            item.create_ui(&inspector);
+                        }
+                        if let Some(item_storage) = &item_storage_data.get(entity) {
+                            item_storage.create_ui(
+                                &inspector,
+                                &item_data,
+                                &item_storage_data,
+                                &displayable_data,
+                            );
+                        }
+                    }
+                });
+            self.imgui_renderer
+                .render(&mut draw_target, inspector)
+                .expect("Failed to render inspector window");
+        }
 
         draw_target
             .finish()

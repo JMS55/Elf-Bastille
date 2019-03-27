@@ -1,89 +1,106 @@
 use crate::components::*;
-use imgui::{im_str, Ui};
-use specs::ReadStorage;
+use imgui::{ImStr, Ui};
+use specs::{Entity, ReadStorage};
 
 impl Position {
     pub fn create_ui(&self, ui: &Ui) {
-        if ui
-            .collapsing_header(im_str!("Position"))
-            .default_open(true)
-            .build()
-        {
-            ui.text(format!("x: {}, y: {}", self.x, self.y))
-        }
+        ui.text(format!("x: {}, y: {}", self.x, self.y));
     }
 }
 
 impl Movement {
     pub fn create_ui(&self, ui: &Ui) {
-        if ui
-            .collapsing_header(im_str!("Movement"))
-            .default_open(true)
-            .build()
-        {
-            ui.text(format!("Move Speed: {}", self.move_speed));
-        }
+        ui.text(format!("Move Speed: {}", self.move_speed));
     }
 }
 
 impl Displayable {
-    // TODO: Display texture
     pub fn create_ui(&self, ui: &Ui) {
-        ui.text(format!("Name: {}", self.name));
+        // TODO: Bold text
+        ui.text(self.entity_name);
     }
 }
 
 impl Elf {
-    pub fn create_ui(&self, ui: &Ui) {
-        if ui
-            .collapsing_header(im_str!("Elf"))
-            .default_open(true)
-            .build()
-        {}
-    }
+    pub fn create_ui(&self, _: &Ui) {}
 }
 
 impl Tree {
     pub fn create_ui(&self, ui: &Ui) {
-        if ui
-            .collapsing_header(im_str!("Tree"))
-            .default_open(true)
-            .build()
-        {
-            ui.text(format!("Durability: {}", self.durability))
-        }
+        ui.text(format!("Durability: {}", self.durability));
     }
 }
 
 impl ItemStorage {
-    // TODO: Show children in (closed by default) tree
-    // TODO: Display item texture by calling Displayable::create_ui()
     pub fn create_ui(
         &self,
         ui: &Ui,
         item_data: &ReadStorage<Item>,
         item_storage_data: &ReadStorage<ItemStorage>,
+        displayable_data: &ReadStorage<Displayable>,
     ) {
-        if ui
-            .collapsing_header(im_str!("Items"))
-            .default_open(true)
-            .build()
-        {
-            if let Some(weight_limit) = self.weight_limit {
-                ui.text(format!(
-                    "Volume: {}/{}, Weight: {}/{}",
-                    self.get_stored_volume(item_data, item_storage_data),
-                    self.volume_limit,
-                    self.get_stored_weight(item_data, item_storage_data),
-                    weight_limit
-                ))
+        fn create_child_node(
+            ui: &Ui,
+            entity: &Entity,
+            item_data: &ReadStorage<Item>,
+            item_storage_data: &ReadStorage<ItemStorage>,
+            displayable_data: &ReadStorage<Displayable>,
+        ) {
+            let displayable = displayable_data.get(*entity).unwrap();
+            if let Some(item_storage) = item_storage_data.get(*entity) {
+                let mut text = format!(
+                    "{} - Stored Volume: {}/{}, Stored Weight: {}",
+                    displayable.entity_name,
+                    item_storage.stored_volume,
+                    item_storage.volume_limit,
+                    item_storage.stored_weight
+                );
+                if let Some(weight_limit) = item_storage.weight_limit {
+                    text = format!("{}/{}", text, weight_limit);
+                }
+                text.push('\0');
+                ui.tree_node(unsafe { ImStr::from_utf8_with_nul_unchecked(text.as_bytes()) })
+                    .default_open(true)
+                    .build(|| {
+                        for item in &item_storage.items {
+                            create_child_node(
+                                ui,
+                                item,
+                                item_data,
+                                item_storage_data,
+                                displayable_data,
+                            );
+                        }
+                    });
             } else {
+                let item = item_data.get(*entity).unwrap();
                 ui.text(format!(
-                    "Volume: {}/{}",
-                    self.get_stored_volume(item_data, item_storage_data),
-                    self.volume_limit,
-                ))
+                    "{} - Volume: {}, Weight: {}",
+                    displayable.entity_name, item.volume, item.weight
+                ));
             }
         }
+
+        // Create root node
+        let mut text = format!(
+            "Items - Stored Volume: {}/{}, Stored Weight: {}",
+            self.stored_volume, self.volume_limit, self.stored_weight
+        );
+        if let Some(weight_limit) = self.weight_limit {
+            text = format!("{}/{}", text, weight_limit);
+        }
+        text.push('\0');
+        ui.tree_node(unsafe { ImStr::from_utf8_with_nul_unchecked(text.as_bytes()) })
+            .build(|| {
+                for item in &self.items {
+                    create_child_node(ui, item, item_data, item_storage_data, displayable_data);
+                }
+            });
+    }
+}
+
+impl Item {
+    pub fn create_ui(&self, ui: &Ui) {
+        ui.text(format!("Volume: {}, Weight: {}", self.volume, self.weight));
     }
 }

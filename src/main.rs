@@ -1,7 +1,8 @@
 use components::*;
+use glium::glutin::dpi::{LogicalPosition, LogicalSize};
 use glium::glutin::{
-    dpi::LogicalSize, ContextBuilder, ElementState, Event, EventsLoop, VirtualKeyCode,
-    WindowBuilder, WindowEvent,
+    ContextBuilder, ElementState, Event, EventsLoop, MouseButton, VirtualKeyCode, WindowBuilder,
+    WindowEvent,
 };
 use glium::Display;
 use specs::{Builder, RunNow, World};
@@ -9,14 +10,14 @@ use std::time::{Duration, Instant};
 use systems::*;
 
 mod components;
-// mod inspector;
+mod inspector;
 mod systems;
 
 pub const WORLD_WIDTH: u32 = 20;
 pub const WORLD_HEIGHT: u32 = 20;
 pub const NUMBER_OF_TEXTURES: u32 = 5;
-const TEXTURE_SIZE: u32 = 16;
-const TEXTURE_SCALE_FACTOR: u32 = 2;
+pub const TEXTURE_SIZE: u32 = 16;
+pub const TEXTURE_SCALE_FACTOR: u32 = 2;
 
 fn main() {
     // Setup profiling
@@ -46,7 +47,6 @@ fn main() {
     world.register::<Item>();
 
     // Create systems
-    let mut item_storage_system = ItemStorageSystem;
     let mut elf_system = ElfSystem;
     let mut pathfinding_system = PathfindingSystem;
     let mut movement_system = MovementSystem;
@@ -63,13 +63,9 @@ fn main() {
                 path: Vec::new(),
                 move_speed: 1,
             })
-            .with(ItemStorage {
-                items: Vec::new(),
-                volume_limit: 0,
-                weight_limit: Some(0),
-            })
+            .with(ItemStorage::new(0, Some(0)))
             .with(Displayable {
-                name: "Eve",
+                entity_name: "Elf",
                 texture_atlas_index: 0,
             })
             .build();
@@ -82,13 +78,9 @@ fn main() {
                 path: Vec::new(),
                 move_speed: 1,
             })
-            .with(ItemStorage {
-                items: Vec::new(),
-                volume_limit: 0,
-                weight_limit: Some(0),
-            })
+            .with(ItemStorage::new(0, Some(0)))
             .with(Displayable {
-                name: "Jeff",
+                entity_name: "Elf",
                 texture_atlas_index: 0,
             })
             .build();
@@ -101,13 +93,9 @@ fn main() {
                 path: Vec::new(),
                 move_speed: 1,
             })
-            .with(ItemStorage {
-                items: Vec::new(),
-                volume_limit: 0,
-                weight_limit: Some(0),
-            })
+            .with(ItemStorage::new(0, Some(0)))
             .with(Displayable {
-                name: "Jane",
+                entity_name: "Elf",
                 texture_atlas_index: 0,
             })
             .build();
@@ -120,13 +108,9 @@ fn main() {
                 path: Vec::new(),
                 move_speed: 1,
             })
-            .with(ItemStorage {
-                items: Vec::new(),
-                volume_limit: 0,
-                weight_limit: Some(0),
-            })
+            .with(ItemStorage::new(0, Some(0)))
             .with(Displayable {
-                name: "Alice",
+                entity_name: "Elf",
                 texture_atlas_index: 0,
             })
             .build();
@@ -139,52 +123,71 @@ fn main() {
                 path: Vec::new(),
                 move_speed: 1,
             })
-            .with(ItemStorage {
-                items: Vec::new(),
-                volume_limit: 0,
-                weight_limit: Some(0),
-            })
+            .with(ItemStorage::new(0, Some(0)))
             .with(Displayable {
-                name: "Bob",
+                entity_name: "Elf",
                 texture_atlas_index: 0,
             })
             .build();
-        let item1 = world
+        let axe_item = Item {
+            volume: 10,
+            weight: 5,
+        };
+        let axe = world
             .create_entity()
-            .with(Item {
-                volume: 10,
-                weight: 5,
+            .with(axe_item)
+            .with(Displayable {
+                entity_name: "Axe",
+                texture_atlas_index: 5,
             })
             .build();
-        let item2 = world
+        let sheild_item = Item {
+            volume: 20,
+            weight: 5,
+        };
+        let shield = world
             .create_entity()
-            .with(Item {
-                volume: 20,
-                weight: 5,
+            .with(sheild_item)
+            .with(Displayable {
+                entity_name: "Shield",
+                texture_atlas_index: 5,
             })
             .build();
-        let item3 = world
+        let mut packet_item = Item {
+            volume: 10,
+            weight: 5,
+        };
+        let mut packet_item_storage = ItemStorage::new(30, Some(70));
+        packet_item_storage
+            .try_insert(shield, &sheild_item, Some(&mut packet_item))
+            .unwrap();
+        let packet = world
             .create_entity()
-            .with(ItemStorage {
-                items: vec![item2],
-                volume_limit: 30,
-                weight_limit: None,
-            })
-            .with(Item {
-                volume: 10,
-                weight: 5,
+            .with(packet_item_storage)
+            .with(packet_item)
+            .with(Displayable {
+                entity_name: "Packet",
+                texture_atlas_index: 5,
             })
             .build();
+        let mut crate_item = Item {
+            volume: 20,
+            weight: 20,
+        };
+        let mut crate_item_storage = ItemStorage::new(50, None);
+        crate_item_storage
+            .try_insert(axe, &axe_item, Some(&mut crate_item))
+            .unwrap();
+        crate_item_storage
+            .try_insert(packet, &packet_item, Some(&mut crate_item))
+            .unwrap();
         world
             .create_entity()
-            .with(ItemStorage {
-                items: vec![item1, item3],
-                volume_limit: 50,
-                weight_limit: None,
-            })
+            .with(crate_item_storage)
+            .with(crate_item)
             .with(Position { x: 15, y: 9 })
             .with(Displayable {
-                name: "Crate",
+                entity_name: "Crate",
                 texture_atlas_index: 3,
             })
             .build();
@@ -193,7 +196,7 @@ fn main() {
             .with(Tree { durability: 15 })
             .with(Position { x: 4, y: 5 })
             .with(Displayable {
-                name: "Tree",
+                entity_name: "Tree",
                 texture_atlas_index: 1,
             })
             .build();
@@ -202,7 +205,7 @@ fn main() {
             .with(Tree { durability: 10 })
             .with(Position { x: 17, y: 9 })
             .with(Displayable {
-                name: "Tree",
+                entity_name: "Tree",
                 texture_atlas_index: 1,
             })
             .build();
@@ -211,7 +214,7 @@ fn main() {
             .with(Tree { durability: 6 })
             .with(Position { x: 12, y: 17 })
             .with(Displayable {
-                name: "Tree",
+                entity_name: "Tree",
                 texture_atlas_index: 1,
             })
             .build();
@@ -220,7 +223,7 @@ fn main() {
             .with(Tree { durability: 8 })
             .with(Position { x: 7, y: 16 })
             .with(Displayable {
-                name: "Tree",
+                entity_name: "Tree",
                 texture_atlas_index: 1,
             })
             .build();
@@ -229,7 +232,7 @@ fn main() {
             .with(Tree { durability: 8 })
             .with(Position { x: 19, y: 0 })
             .with(Displayable {
-                name: "Tree",
+                entity_name: "Tree",
                 texture_atlas_index: 1,
             })
             .build();
@@ -238,7 +241,7 @@ fn main() {
                 .create_entity()
                 .with(Position { x, y: 7 })
                 .with(Displayable {
-                    name: "Wall",
+                    entity_name: "Wall",
                     texture_atlas_index: 2,
                 })
                 .build();
@@ -247,7 +250,7 @@ fn main() {
             .create_entity()
             .with(Position { x: 8, y: 8 })
             .with(Displayable {
-                name: "Wall",
+                entity_name: "Wall",
                 texture_atlas_index: 2,
             })
             .build();
@@ -255,7 +258,7 @@ fn main() {
             .create_entity()
             .with(Position { x: 8, y: 9 })
             .with(Displayable {
-                name: "Wall",
+                entity_name: "Wall",
                 texture_atlas_index: 2,
             })
             .build();
@@ -263,7 +266,7 @@ fn main() {
             .create_entity()
             .with(Position { x: 8, y: 10 })
             .with(Displayable {
-                name: "Wall",
+                entity_name: "Wall",
                 texture_atlas_index: 2,
             })
             .build();
@@ -271,7 +274,7 @@ fn main() {
             .create_entity()
             .with(Position { x: 8, y: 11 })
             .with(Displayable {
-                name: "Wall",
+                entity_name: "Wall",
                 texture_atlas_index: 2,
             })
             .build();
@@ -279,7 +282,7 @@ fn main() {
             .create_entity()
             .with(Position { x: 8, y: 12 })
             .with(Displayable {
-                name: "Wall",
+                entity_name: "Wall",
                 texture_atlas_index: 2,
             })
             .build();
@@ -287,7 +290,7 @@ fn main() {
             .create_entity()
             .with(Position { x: 8, y: 13 })
             .with(Displayable {
-                name: "Wall",
+                entity_name: "Wall",
                 texture_atlas_index: 2,
             })
             .build();
@@ -295,7 +298,7 @@ fn main() {
             .create_entity()
             .with(Position { x: 8, y: 14 })
             .with(Displayable {
-                name: "Wall",
+                entity_name: "Wall",
                 texture_atlas_index: 2,
             })
             .build();
@@ -307,25 +310,68 @@ fn main() {
     let mut accumulator = Duration::from_secs(0);
     let mut is_paused = false;
     let mut should_close = false;
+    let mut mouse_position = (0.0, 0.0);
     while !should_close {
         // Poll events
-        event_loop.poll_events(|event| match event {
-            Event::WindowEvent { event, .. } => match event {
-                WindowEvent::CloseRequested => should_close = true,
-                WindowEvent::KeyboardInput { input, .. } => {
-                    if input.state == ElementState::Pressed {
+        event_loop.poll_events(|event| {
+            imgui_winit_support::handle_event(
+                &mut render_system.imgui,
+                &event,
+                render_system.display.gl_window().get_hidpi_factor(),
+                render_system.display.gl_window().get_hidpi_factor().round(),
+            );
+
+            match event {
+                Event::WindowEvent { event, .. } => match event {
+                    WindowEvent::CloseRequested => should_close = true,
+                    WindowEvent::KeyboardInput { input, .. }
+                        if input.state == ElementState::Pressed =>
+                    {
                         match input.virtual_keycode {
                             Some(VirtualKeyCode::P) => {
+                                if is_paused {
+                                    render_system.selected_tile = None;
+                                }
                                 is_paused = !is_paused;
                             }
                             _ => {}
                         }
                     }
-                }
+                    WindowEvent::CursorMoved {
+                        position: LogicalPosition { x, y },
+                        ..
+                    } => {
+                        mouse_position = (x, y);
+                    }
+                    WindowEvent::MouseInput {
+                        state: ElementState::Pressed,
+                        button: MouseButton::Left,
+                        ..
+                    // TODO: Replace this unsafe block with the new methods when imgui-rs 0.1 comes out - render_system.imgui.io().want_capture_mouse
+                    } if is_paused && unsafe { !(*imgui::sys::igGetIO()).want_capture_mouse } => {
+                        let new_tile = Position {
+                            x: mouse_position.0 as u32 / (TEXTURE_SIZE * TEXTURE_SCALE_FACTOR),
+                            y: mouse_position.1 as u32 / (TEXTURE_SIZE * TEXTURE_SCALE_FACTOR),
+                        };
+                        match render_system.selected_tile {
+                            Some(selected_tile) if selected_tile == new_tile => {
+                                render_system.selected_tile = None;
+                            }
+                            _ => {
+                                render_system.selected_tile = Some(new_tile);
+                            }
+                        }
+                    }
+                    _ => {}
+                },
                 _ => {}
-            },
-            _ => {}
+            }
         });
+
+        imgui_winit_support::update_mouse_cursor(
+            &render_system.imgui,
+            &render_system.display.gl_window(),
+        );
 
         // Update based on timer
         let new_time = Instant::now();
@@ -333,7 +379,6 @@ fn main() {
         current_time = new_time;
         while accumulator >= delta_time {
             if !is_paused {
-                item_storage_system.run_now(&world.res);
                 elf_system.run_now(&world.res);
                 world.maintain();
                 pathfinding_system.run_now(&world.res);

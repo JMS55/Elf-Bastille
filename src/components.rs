@@ -1,6 +1,6 @@
 use crate::{WORLD_HEIGHT, WORLD_WIDTH};
 use specs::storage::{BTreeStorage, DenseVecStorage, NullStorage, VecStorage};
-use specs::{Component, Entity, ReadStorage};
+use specs::{Component, Entity};
 use specs_derive::Component;
 use std::cmp::Ord;
 
@@ -61,7 +61,7 @@ pub struct Movement {
 #[derive(Component, Copy, Clone, Eq, PartialEq, Hash, Debug, Ord, PartialOrd)]
 #[storage(VecStorage)]
 pub struct Displayable {
-    pub name: &'static str,
+    pub entity_name: &'static str,
     pub texture_atlas_index: u32,
 }
 
@@ -79,71 +79,65 @@ pub struct Tree {
 #[storage(BTreeStorage)]
 pub struct ItemStorage {
     pub items: Vec<Entity>,
+    pub stored_volume: u32,
+    pub stored_weight: u32,
     pub volume_limit: u32,
     pub weight_limit: Option<u32>,
 }
 
 impl ItemStorage {
+    pub fn new(volume_limit: u32, weight_limit: Option<u32>) -> Self {
+        Self {
+            items: Vec::new(),
+            stored_volume: 0,
+            stored_weight: 0,
+            volume_limit,
+            weight_limit,
+        }
+    }
+
     // Try inserting an item, returning the item back if it fails
     pub fn try_insert(
-        &self,
-        item: Entity,
-        item_data: &ReadStorage<Item>,
-        item_storage_data: &ReadStorage<ItemStorage>,
+        &mut self,
+        item_entity: Entity,
+        item: &Item,
+        self_item: Option<&mut Item>, // Item belonging to the same entity as this component
     ) -> Result<(), Entity> {
-        let mut suceeded = true;
+        let mut succeeded = true;
 
-        // Volume check
-        let stored_volume = self.get_stored_volume(item_data, item_storage_data);
-        let item_volume = item_data.get(item).unwrap().volume;
-        if stored_volume + item_volume > self.volume_limit {
-            suceeded = false;
+        if self.stored_volume + item.volume > self.volume_limit {
+            succeeded = false;
         }
 
-        // Weight check
         if let Some(weight_limit) = self.weight_limit {
-            let stored_weight = self.get_stored_weight(item_data, item_storage_data);
-            let item_weight = item_data.get(item).unwrap().weight;
-            if stored_weight + item_weight > weight_limit {
-                suceeded = false;
+            if self.stored_weight + item.weight > weight_limit {
+                succeeded = false;
             }
         }
 
-        match suceeded {
-            true => Ok(()),
-            false => Err(item),
+        match succeeded {
+            true => {
+                self.stored_volume += item.volume;
+                self.stored_weight += item.weight;
+                if let Some(self_item) = self_item {
+                    self_item.weight += item.weight;
+                }
+                self.items.push(item_entity);
+                Ok(())
+            }
+            false => Err(item_entity),
         }
     }
 
-    pub fn get_stored_volume(
-        &self,
-        item_data: &ReadStorage<Item>,
-        item_storage_data: &ReadStorage<ItemStorage>,
-    ) -> u32 {
-        let mut total = 0;
-        for item in &self.items {
-            total += item_data.get(*item).unwrap().volume;
-            if let Some(item_storage) = item_storage_data.get(*item) {
-                total += item_storage.get_stored_volume(item_data, item_storage_data);
-            }
-        }
-        total
-    }
-
-    pub fn get_stored_weight(
-        &self,
-        item_data: &ReadStorage<Item>,
-        item_storage_data: &ReadStorage<ItemStorage>,
-    ) -> u32 {
-        let mut total = 0;
-        for item in &self.items {
-            total += item_data.get(*item).unwrap().weight;
-            if let Some(item_storage) = item_storage_data.get(*item) {
-                total += item_storage.get_stored_weight(item_data, item_storage_data);
-            }
-        }
-        total
-    }
+    // TODO: Wait for Vec::remove_item() to be stabilized
+    // pub fn remove(&mut self, item_entity: &Entity, item: &Item, self_item: Option<&mut Item>) {
+    //     self.items.remove_item(item_entity);
+    //     self.stored_volume -= item.volume;
+    //     self.stored_weight -= item.weight;
+    //     if let Some(self_item) = self_item {
+    //         self_item.weight -= item.weight;
+    //     }
+    // }
 }
 
 #[derive(Component, Copy, Clone, Eq, PartialEq, Hash, Debug, Ord, PartialOrd)]
