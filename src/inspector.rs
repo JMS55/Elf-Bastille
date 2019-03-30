@@ -21,10 +21,6 @@ impl Displayable {
     }
 }
 
-impl Elf {
-    pub fn create_ui(&self, _: &Ui) {}
-}
-
 impl Tree {
     pub fn create_ui(&self, ui: &Ui) {
         ui.text(format!("Durability: {}", self.durability));

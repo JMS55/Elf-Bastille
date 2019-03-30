@@ -1,4 +1,4 @@
-use crate::components::{Displayable, Elf, Item, ItemStorage, Movement, Position, Tree};
+use crate::components::*;
 use crate::{NUMBER_OF_TEXTURES, TEXTURE_SCALE_FACTOR, TEXTURE_SIZE, WORLD_HEIGHT, WORLD_WIDTH};
 use glium::texture::{RawImage2d, SrgbTexture2d};
 use glium::uniforms::{MagnifySamplerFilter, Sampler};
@@ -125,7 +125,6 @@ impl<'a> System<'a> for RenderSystem {
     type SystemData = (
         Entities<'a>,
         ReadStorage<'a, Displayable>,
-        ReadStorage<'a, Elf>,
         ReadStorage<'a, Tree>,
         ReadStorage<'a, Position>,
         ReadStorage<'a, Movement>,
@@ -138,7 +137,6 @@ impl<'a> System<'a> for RenderSystem {
         (
             entities,
             displayable_data,
-            elf_data,
             tree_data,
             position_data,
             movement_data,
@@ -216,9 +214,6 @@ impl<'a> System<'a> for RenderSystem {
                             .find(|(_, position, _)| position == &&selected_tile)
                     {
                         displayable.create_ui(&inspector);
-                        if let Some(elf) = &elf_data.get(entity) {
-                            elf.create_ui(&inspector);
-                        }
                         if let Some(tree) = &tree_data.get(entity) {
                             tree.create_ui(&inspector);
                         }

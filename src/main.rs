@@ -41,13 +41,13 @@ fn main() {
     world.register::<Position>();
     world.register::<Movement>();
     world.register::<Displayable>();
-    world.register::<Elf>();
     world.register::<Tree>();
     world.register::<ItemStorage>();
     world.register::<Item>();
+    world.register::<ChopTrees>();
+    world.register::<ReplenishItem>();
 
     // Create systems
-    let mut elf_system = ElfSystem;
     let mut pathfinding_system = PathfindingSystem;
     let mut movement_system = MovementSystem;
     let mut render_system = RenderSystem::new(display);
@@ -56,7 +56,6 @@ fn main() {
     {
         world
             .create_entity()
-            .with(Elf {})
             .with(Position { x: 0, y: 0 })
             .with(Movement {
                 target: None,
@@ -71,7 +70,6 @@ fn main() {
             .build();
         world
             .create_entity()
-            .with(Elf {})
             .with(Position { x: 19, y: 19 })
             .with(Movement {
                 target: None,
@@ -86,7 +84,6 @@ fn main() {
             .build();
         world
             .create_entity()
-            .with(Elf {})
             .with(Position { x: 2, y: 15 })
             .with(Movement {
                 target: None,
@@ -101,7 +98,6 @@ fn main() {
             .build();
         world
             .create_entity()
-            .with(Elf {})
             .with(Position { x: 10, y: 14 })
             .with(Movement {
                 target: None,
@@ -116,7 +112,6 @@ fn main() {
             .build();
         world
             .create_entity()
-            .with(Elf {})
             .with(Position { x: 10, y: 10 })
             .with(Movement {
                 target: None,
@@ -381,8 +376,6 @@ fn main() {
         current_time = new_time;
         while accumulator >= delta_time {
             if !is_paused {
-                elf_system.run_now(&world.res);
-                world.maintain();
                 pathfinding_system.run_now(&world.res);
                 movement_system.run_now(&world.res);
             }

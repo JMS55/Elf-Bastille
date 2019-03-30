@@ -1,10 +1,10 @@
 use crate::{WORLD_HEIGHT, WORLD_WIDTH};
-use specs::storage::{BTreeStorage, DenseVecStorage, NullStorage, VecStorage};
+use specs::storage::{BTreeStorage, DenseVecStorage, VecStorage};
 use specs::{Component, Entity};
 use specs_derive::Component;
 use std::cmp::Ord;
 
-#[derive(Component, Copy, Clone, Eq, PartialEq, Hash, Debug, Ord, PartialOrd)]
+#[derive(Component, Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[storage(VecStorage)]
 pub struct Position {
     pub x: u32,
@@ -50,7 +50,7 @@ impl Position {
     }
 }
 
-#[derive(Component, Clone, Eq, PartialEq, Hash, Debug, Ord, PartialOrd)]
+#[derive(Component, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[storage(DenseVecStorage)]
 pub struct Movement {
     pub target: Option<Position>,
@@ -58,24 +58,20 @@ pub struct Movement {
     pub move_speed: u32,
 }
 
-#[derive(Component, Copy, Clone, Eq, PartialEq, Hash, Debug, Ord, PartialOrd)]
+#[derive(Component, Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[storage(VecStorage)]
 pub struct Displayable {
     pub entity_name: &'static str,
     pub texture_atlas_index: u32,
 }
 
-#[derive(Component, Copy, Clone, Eq, PartialEq, Hash, Debug, Ord, PartialOrd, Default)]
-#[storage(NullStorage)]
-pub struct Elf;
-
-#[derive(Component, Copy, Clone, Eq, PartialEq, Hash, Debug, Ord, PartialOrd)]
+#[derive(Component, Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[storage(BTreeStorage)]
 pub struct Tree {
     pub durability: u32,
 }
 
-#[derive(Component, Clone, Eq, PartialEq, Hash, Debug, Ord, PartialOrd)]
+#[derive(Component, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[storage(BTreeStorage)]
 pub struct ItemStorage {
     pub items: Vec<Entity>,
@@ -129,8 +125,12 @@ impl ItemStorage {
         }
     }
 
+    pub fn try_take_item_of_type(&mut self) {
+        unimplemented!("TODO - If self has an item of the given type, remove and return it, else return Err(())")
+    }
+
     // TODO: Wait for Vec::remove_item() to be stabilized
-    // pub fn remove(&mut self, item_entity: &Entity, item: &Item, self_item: Option<&mut Item>) {
+    // fn remove(&mut self, item_entity: &Entity, item: &Item, self_item: Option<&mut Item>) {
     //     self.items.remove_item(item_entity);
     //     self.stored_volume -= item.volume;
     //     self.stored_weight -= item.weight;
@@ -140,9 +140,22 @@ impl ItemStorage {
     // }
 }
 
-#[derive(Component, Copy, Clone, Eq, PartialEq, Hash, Debug, Ord, PartialOrd)]
+#[derive(Component, Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[storage(BTreeStorage)]
 pub struct Item {
     pub volume: u32,
     pub weight: u32,
+}
+
+#[derive(Component, Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[storage(BTreeStorage)]
+pub struct ChopTrees {
+    // area: Area,  TODO: Create Area struct
+}
+
+#[derive(Component, Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[storage(BTreeStorage)]
+pub struct ReplenishItem {
+    // item: EntityType,    TODO
+    item_storage_location: Position,
 }
