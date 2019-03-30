@@ -187,7 +187,7 @@ impl<'a> System<'a> for RenderSystem {
                         .magnify_filter(MagnifySamplerFilter::Nearest)),
                 &draw_parameters,
             )
-            .expect("Draw call f9iled");
+            .expect("Draw call failed");
 
         // Render gui
         if let Some(selected_tile) = self.selected_tile {
