@@ -10,7 +10,7 @@ pub struct PathfindingSystem;
 impl<'a> System<'a> for PathfindingSystem {
     type SystemData = (WriteStorage<'a, Movement>, ReadStorage<'a, Position>);
 
-    // A* pathfind in parallel to adjacent tile to target
+    // A* pathfind in parallel to tile adjacent to target
     fn run(&mut self, (mut movement_data, position_data): Self::SystemData) {
         microprofile::scope!("systems", "pathfinding");
 
