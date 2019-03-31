@@ -1,4 +1,4 @@
-# THIS PROJECT HAS NO LICENSE - YOU MAY NOT USE ANY OF THE FILES FOR ANY PURPOSE
+# THIS PROJECT HAS NO LICENSE - YOU MAY NOT USE ANY OF THESE FILES FOR ANY PURPOSE
 
 * Credit to ThKaspar and Justin Nichol for the dark elf sprite
 * Credit to SpiderDave for the tree sprite
