@@ -1,74 +1,31 @@
 use crate::{WORLD_HEIGHT, WORLD_WIDTH};
-use specs::storage::{BTreeStorage, DenseVecStorage, VecStorage};
+use specs::storage::{BTreeStorage, DenseVecStorage, NullStorage, VecStorage};
 use specs::{Component, Entity};
 use specs_derive::Component;
 use std::cmp::Ord;
 
 #[derive(Component, Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
-#[storage(VecStorage)]
-pub struct Position {
-    pub x: u32,
-    pub y: u32,
-}
-
-impl Position {
-    pub fn get_adjacent(self) -> Vec<Self> {
-        let mut adjacent = Vec::with_capacity(4);
-        // Above
-        if self.y != 0 {
-            adjacent.push(Self {
-                x: self.x,
-                y: self.y - 1,
-            });
-        }
-        // Below
-        if self.y != WORLD_HEIGHT - 1 {
-            adjacent.push(Self {
-                x: self.x,
-                y: self.y + 1,
-            });
-        }
-        // Left
-        if self.x != 0 {
-            adjacent.push(Self {
-                x: self.x - 1,
-                y: self.y,
-            });
-        }
-        // Right
-        if self.x != WORLD_WIDTH - 1 {
-            adjacent.push(Self {
-                x: self.x + 1,
-                y: self.y,
-            });
-        }
-        adjacent
-    }
-
-    pub fn get_distance_from(self, other: Self) -> u32 {
-        (self.x.max(other.x) - self.x.min(other.x)) + (self.y.max(other.y) - self.y.min(other.y))
-    }
-}
-
-#[derive(Component, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
-#[storage(DenseVecStorage)]
-pub struct Movement {
-    pub target: Option<Position>,
-    pub path: Vec<Position>,
-    pub move_speed: u32,
+#[storage(BTreeStorage)]
+pub struct Damageable {
+    attack_type: AttackType,
 }
 
 #[derive(Component, Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[storage(VecStorage)]
 pub struct Displayable {
-    pub entity_name: &'static str,
+    pub text: &'static str,
     pub texture_atlas_index: u32,
 }
 
 #[derive(Component, Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[storage(BTreeStorage)]
-pub struct Tree {
-    pub durability: u32,
+pub struct Durability(pub u32);
+
+#[derive(Component, Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[storage(BTreeStorage)]
+pub struct Item {
+    pub volume: u32,
+    pub weight: u32,
 }
 
 #[derive(Component, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -125,9 +82,9 @@ impl ItemStorage {
         }
     }
 
-    pub fn try_take_item_of_type(&mut self) {
-        unimplemented!("TODO - If self has an item of the given type, remove and return it, else return Err(())")
-    }
+    // pub fn try_take_out(&mut self) {
+    //     unimplemented!("TODO")
+    // }
 
     // TODO: Wait for Vec::remove_item() to be stabilized
     // fn remove(&mut self, item_entity: &Entity, item: &Item, self_item: Option<&mut Item>) {
@@ -140,22 +97,101 @@ impl ItemStorage {
     // }
 }
 
+#[derive(Component, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[storage(DenseVecStorage)]
+pub struct Movement {
+    pub target: Option<Position>,
+    pub path: Vec<Position>,
+    pub move_speed: u32,
+}
+
+#[derive(Component, Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[storage(VecStorage)]
+pub struct Position {
+    pub x: u32,
+    pub y: u32,
+}
+
+impl Position {
+    pub fn get_adjacent(self) -> Vec<Self> {
+        let mut adjacent = Vec::with_capacity(4);
+        // Above
+        if self.y != 0 {
+            adjacent.push(Self {
+                x: self.x,
+                y: self.y - 1,
+            });
+        }
+        // Below
+        if self.y != WORLD_HEIGHT - 1 {
+            adjacent.push(Self {
+                x: self.x,
+                y: self.y + 1,
+            });
+        }
+        // Left
+        if self.x != 0 {
+            adjacent.push(Self {
+                x: self.x - 1,
+                y: self.y,
+            });
+        }
+        // Right
+        if self.x != WORLD_WIDTH - 1 {
+            adjacent.push(Self {
+                x: self.x + 1,
+                y: self.y,
+            });
+        }
+        adjacent
+    }
+
+    pub fn get_distance_from(self, other: Self) -> u32 {
+        (self.x.max(other.x) - self.x.min(other.x)) + (self.y.max(other.y) - self.y.min(other.y))
+    }
+}
+
+#[derive(Component, Default)]
+#[storage(NullStorage)]
+pub struct TurnUsed;
+
 #[derive(Component, Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[storage(BTreeStorage)]
-pub struct Item {
-    pub volume: u32,
-    pub weight: u32,
+pub struct Weapon {
+    attack_type: AttackType,
 }
 
 #[derive(Component, Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[storage(BTreeStorage)]
-pub struct ChopTrees {
-    // area: Area,  TODO: Create Area struct
+pub struct TaskChopTrees {
+    area: Area,
 }
 
-#[derive(Component, Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub trait ReplenishableItem: Send + Sync {}
+
+#[derive(Component)]
 #[storage(BTreeStorage)]
-pub struct ReplenishItem {
-    // item: EntityType,    TODO
+pub struct TaskReplenishItem {
+    item: Box<dyn ReplenishableItem>,
     item_storage_location: Position,
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct Area {
+    pub top_left: Position,
+    pub bottom_right: Position,
+}
+
+impl Area {
+    pub fn contains(&self, position: Position) -> bool {
+        (self.top_left.x <= position.x)
+            && (position.x <= self.bottom_right.x)
+            && (self.top_left.y <= position.y)
+            && (position.y <= self.bottom_right.y)
+    }
+}
+
+#[derive(Copy, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub enum AttackType {
+    Cut,
 }

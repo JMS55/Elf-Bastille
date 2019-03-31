@@ -15,7 +15,7 @@ mod systems;
 
 pub const WORLD_WIDTH: u32 = 20;
 pub const WORLD_HEIGHT: u32 = 20;
-pub const NUMBER_OF_TEXTURES: u32 = 5;
+pub const NUMBER_OF_TEXTURES: u32 = 6;
 pub const TEXTURE_SIZE: u32 = 16;
 pub const TEXTURE_SCALE_FACTOR: u32 = 2;
 
@@ -38,14 +38,17 @@ fn main() {
 
     // Create the world
     let mut world = World::new();
-    world.register::<Position>();
-    world.register::<Movement>();
+    world.register::<Damageable>();
     world.register::<Displayable>();
-    world.register::<Tree>();
-    world.register::<ItemStorage>();
+    world.register::<Durability>();
     world.register::<Item>();
-    world.register::<ChopTrees>();
-    world.register::<ReplenishItem>();
+    world.register::<ItemStorage>();
+    world.register::<Movement>();
+    world.register::<Position>();
+    world.register::<TurnUsed>();
+    world.register::<Weapon>();
+    world.register::<TaskChopTrees>();
+    world.register::<TaskReplenishItem>();
 
     // Create systems
     let mut pathfinding_system = PathfindingSystem;
@@ -64,7 +67,7 @@ fn main() {
             })
             .with(ItemStorage::new(0, Some(0)))
             .with(Displayable {
-                entity_name: "Elf",
+                text: "Elf",
                 texture_atlas_index: 0,
             })
             .build();
@@ -78,7 +81,7 @@ fn main() {
             })
             .with(ItemStorage::new(0, Some(0)))
             .with(Displayable {
-                entity_name: "Elf",
+                text: "Elf",
                 texture_atlas_index: 0,
             })
             .build();
@@ -92,7 +95,7 @@ fn main() {
             })
             .with(ItemStorage::new(0, Some(0)))
             .with(Displayable {
-                entity_name: "Elf",
+                text: "Elf",
                 texture_atlas_index: 0,
             })
             .build();
@@ -106,7 +109,7 @@ fn main() {
             })
             .with(ItemStorage::new(0, Some(0)))
             .with(Displayable {
-                entity_name: "Elf",
+                text: "Elf",
                 texture_atlas_index: 0,
             })
             .build();
@@ -120,7 +123,7 @@ fn main() {
             })
             .with(ItemStorage::new(0, Some(0)))
             .with(Displayable {
-                entity_name: "Elf",
+                text: "Elf",
                 texture_atlas_index: 0,
             })
             .build();
@@ -132,7 +135,7 @@ fn main() {
             .create_entity()
             .with(axe_item)
             .with(Displayable {
-                entity_name: "Axe",
+                text: "Axe",
                 texture_atlas_index: 5,
             })
             .build();
@@ -144,7 +147,7 @@ fn main() {
             .create_entity()
             .with(sheild_item)
             .with(Displayable {
-                entity_name: "Shield",
+                text: "Shield",
                 texture_atlas_index: 5,
             })
             .build();
@@ -161,7 +164,7 @@ fn main() {
             .with(packet_item_storage)
             .with(packet_item)
             .with(Displayable {
-                entity_name: "Packet",
+                text: "Packet",
                 texture_atlas_index: 5,
             })
             .build();
@@ -182,52 +185,52 @@ fn main() {
             .with(crate_item)
             .with(Position { x: 15, y: 9 })
             .with(Displayable {
-                entity_name: "Crate",
+                text: "Crate",
                 texture_atlas_index: 3,
             })
             .build();
         world
             .create_entity()
-            .with(Tree { durability: 15 })
+            .with(Durability(15))
             .with(Position { x: 4, y: 5 })
             .with(Displayable {
-                entity_name: "Tree",
+                text: "Tree",
                 texture_atlas_index: 1,
             })
             .build();
         world
             .create_entity()
-            .with(Tree { durability: 10 })
+            .with(Durability(10))
             .with(Position { x: 17, y: 9 })
             .with(Displayable {
-                entity_name: "Tree",
+                text: "Tree",
                 texture_atlas_index: 1,
             })
             .build();
         world
             .create_entity()
-            .with(Tree { durability: 6 })
+            .with(Durability(6))
             .with(Position { x: 12, y: 17 })
             .with(Displayable {
-                entity_name: "Tree",
+                text: "Tree",
                 texture_atlas_index: 1,
             })
             .build();
         world
             .create_entity()
-            .with(Tree { durability: 8 })
+            .with(Durability(8))
             .with(Position { x: 7, y: 16 })
             .with(Displayable {
-                entity_name: "Tree",
+                text: "Tree",
                 texture_atlas_index: 1,
             })
             .build();
         world
             .create_entity()
-            .with(Tree { durability: 8 })
+            .with(Durability(8))
             .with(Position { x: 19, y: 0 })
             .with(Displayable {
-                entity_name: "Tree",
+                text: "Tree",
                 texture_atlas_index: 1,
             })
             .build();
@@ -236,7 +239,7 @@ fn main() {
                 .create_entity()
                 .with(Position { x, y: 7 })
                 .with(Displayable {
-                    entity_name: "Wall",
+                    text: "Wall",
                     texture_atlas_index: 2,
                 })
                 .build();
@@ -245,7 +248,7 @@ fn main() {
             .create_entity()
             .with(Position { x: 8, y: 8 })
             .with(Displayable {
-                entity_name: "Wall",
+                text: "Wall",
                 texture_atlas_index: 2,
             })
             .build();
@@ -253,7 +256,7 @@ fn main() {
             .create_entity()
             .with(Position { x: 8, y: 9 })
             .with(Displayable {
-                entity_name: "Wall",
+                text: "Wall",
                 texture_atlas_index: 2,
             })
             .build();
@@ -261,7 +264,7 @@ fn main() {
             .create_entity()
             .with(Position { x: 8, y: 10 })
             .with(Displayable {
-                entity_name: "Wall",
+                text: "Wall",
                 texture_atlas_index: 2,
             })
             .build();
@@ -269,7 +272,7 @@ fn main() {
             .create_entity()
             .with(Position { x: 8, y: 11 })
             .with(Displayable {
-                entity_name: "Wall",
+                text: "Wall",
                 texture_atlas_index: 2,
             })
             .build();
@@ -277,7 +280,7 @@ fn main() {
             .create_entity()
             .with(Position { x: 8, y: 12 })
             .with(Displayable {
-                entity_name: "Wall",
+                text: "Wall",
                 texture_atlas_index: 2,
             })
             .build();
@@ -285,7 +288,7 @@ fn main() {
             .create_entity()
             .with(Position { x: 8, y: 13 })
             .with(Displayable {
-                entity_name: "Wall",
+                text: "Wall",
                 texture_atlas_index: 2,
             })
             .build();
@@ -293,7 +296,7 @@ fn main() {
             .create_entity()
             .with(Position { x: 8, y: 14 })
             .with(Displayable {
-                entity_name: "Wall",
+                text: "Wall",
                 texture_atlas_index: 2,
             })
             .build();

@@ -17,13 +17,13 @@ impl Movement {
 impl Displayable {
     pub fn create_ui(&self, ui: &Ui) {
         // TODO: Bold text
-        ui.text(self.entity_name);
+        ui.text(self.text);
     }
 }
 
-impl Tree {
+impl Durability {
     pub fn create_ui(&self, ui: &Ui) {
-        ui.text(format!("Durability: {}", self.durability));
+        ui.text(format!("Durability: {}", self.0));
     }
 }
 
@@ -46,7 +46,7 @@ impl ItemStorage {
             if let Some(item_storage) = item_storage_data.get(*entity) {
                 let mut text = format!(
                     "{} - Stored Volume: {}/{}, Stored Weight: {}",
-                    displayable.entity_name,
+                    displayable.text,
                     item_storage.stored_volume,
                     item_storage.volume_limit,
                     item_storage.stored_weight
@@ -72,7 +72,7 @@ impl ItemStorage {
                 let item = item_data.get(*entity).unwrap();
                 ui.text(format!(
                     "{} - Volume: {}, Weight: {}",
-                    displayable.entity_name, item.volume, item.weight
+                    displayable.text, item.volume, item.weight
                 ));
             }
         }

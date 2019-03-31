@@ -125,7 +125,7 @@ impl<'a> System<'a> for RenderSystem {
     type SystemData = (
         Entities<'a>,
         ReadStorage<'a, Displayable>,
-        ReadStorage<'a, Tree>,
+        ReadStorage<'a, Durability>,
         ReadStorage<'a, Position>,
         ReadStorage<'a, Movement>,
         ReadStorage<'a, ItemStorage>,
@@ -137,7 +137,7 @@ impl<'a> System<'a> for RenderSystem {
         (
             entities,
             displayable_data,
-            tree_data,
+            durability_data,
             position_data,
             movement_data,
             item_storage_data,
@@ -214,8 +214,8 @@ impl<'a> System<'a> for RenderSystem {
                             .find(|(_, position, _)| position == &&selected_tile)
                     {
                         displayable.create_ui(&inspector);
-                        if let Some(tree) = &tree_data.get(entity) {
-                            tree.create_ui(&inspector);
+                        if let Some(durability) = &durability_data.get(entity) {
+                            durability.create_ui(&inspector);
                         }
                         position.create_ui(&inspector);
                         if let Some(movement) = &movement_data.get(entity) {
