@@ -1,6 +1,6 @@
 use crate::{WORLD_HEIGHT, WORLD_WIDTH};
 use specs::storage::{BTreeStorage, DenseVecStorage, NullStorage, VecStorage};
-use specs::{Component, Entity};
+use specs::{Component, Entity, LazyUpdate};
 use specs_derive::Component;
 use std::cmp::Ord;
 
@@ -96,6 +96,16 @@ impl ItemStorage {
     //     }
     // }
 }
+
+#[derive(Component, Copy, Clone)]
+#[storage(BTreeStorage)]
+pub struct Loot {
+    pub on_removed_callback: fn(&LazyUpdate),
+}
+
+#[derive(Component, Default)]
+#[storage(NullStorage)]
+pub struct MarkedForDeath;
 
 #[derive(Component, Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[storage(DenseVecStorage)]

@@ -43,6 +43,8 @@ fn main() {
     world.register::<Durability>();
     world.register::<Item>();
     world.register::<ItemStorage>();
+    world.register::<Loot>();
+    world.register::<MarkedForDeath>();
     world.register::<Movement>();
     world.register::<Position>();
     world.register::<TurnUsed>();
@@ -54,6 +56,8 @@ fn main() {
     let mut pathfinding_system = PathfindingSystem;
     let mut movement_system = MovementSystem;
     let mut render_system = RenderSystem::new(display);
+    let mut loot_system = LootSystem;
+    let mut cleanup_dead_system = CleanupDeadSystem;
 
     // Create entities
     {
@@ -381,6 +385,9 @@ fn main() {
             if !is_paused {
                 pathfinding_system.run_now(&world.res);
                 movement_system.run_now(&world.res);
+                loot_system.run_now(&world.res);
+                cleanup_dead_system.run_now(&world.res);
+                world.maintain();
             }
             accumulator -= delta_time;
         }
