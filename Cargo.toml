@@ -4,12 +4,9 @@ version = "1.0.0"
 edition = "2018"
 
 [dependencies]
-glium = "0.23"
 specs = "0.14"
 specs-derive = "0.4"
-imgui = "0.0"
-imgui-glium-renderer = "0.0"
-imgui-winit-support = "0.0"
 rayon = "1.0"
+glium = "0.23"
 image = "0.21"
 microprofile = "0.0"
