@@ -6,6 +6,7 @@ use std::time::Duration;
 #[derive(Component)]
 #[storage(BTreeStorage)]
 pub struct Container {
+    // Does not support nesting
     pub entities: Vec<Entity>,
     pub stored_volume: u32,
     pub stored_weight: u32,
@@ -22,16 +23,6 @@ impl Container {
             volume_limit,
             weight_limit,
         }
-    }
-
-    pub fn try_insert(entity: Entity) -> Result<(), Entity> {
-        // Remember to add ContainerChild
-        unimplemented!("TODO")
-    }
-
-    pub fn try_take_out(entity_type: EntityType, destination: Entity) -> Result<Entity, ()> {
-        // Remember to remove ContainerChild
-        unimplemented!("TODO")
     }
 }
 
@@ -77,10 +68,10 @@ pub struct Displayable {
 #[derive(Component)]
 #[storage(BTreeStorage)]
 pub struct AI {
-    pub set_action: fn(&LazyUpdate), // Responsible for deleting the old action component
+    pub set_action: fn(&LazyUpdate),
 }
 
-#[derive(Component)]
+#[derive(Component, PartialEq)]
 #[storage(BTreeStorage)]
 pub enum EntityType {
     Tree,
@@ -99,13 +90,13 @@ pub struct Loot {
 #[derive(Component)]
 #[storage(BTreeStorage)]
 pub struct Position {
-    pub x: f32,
-    pub y: f32,
-    pub z: f32,
+    pub x: i64,
+    pub y: i64,
+    pub z: i64,
 }
 
 impl Position {
-    pub fn new(x: f32, y: f32, z: f32) -> Self {
+    pub fn new(x: i64, y: i64, z: i64) -> Self {
         Self { x, y, z }
     }
 }
@@ -116,8 +107,44 @@ pub struct MarkedForDeath;
 
 #[derive(Component)]
 #[storage(BTreeStorage)]
-pub struct MovementSpeed(u32);
+pub struct MovementInfo {
+    pub speed: i64,
+    pub size: i64,
+}
 
 #[derive(Component, Default)]
 #[storage(NullStorage)]
 pub struct Walkable;
+
+#[derive(Component)]
+#[storage(BTreeStorage)]
+pub struct ActionInsertIntoContainer {
+    pub entity: Entity,
+    pub container: Entity,
+}
+
+#[derive(Component)]
+#[storage(BTreeStorage)]
+pub struct ActionTakeFromContainer {
+    pub entity_type: EntityType,
+    pub container: Entity,
+}
+
+#[derive(Component)]
+#[storage(BTreeStorage)]
+pub struct ActionCraft {
+    pub craft: fn(&LazyUpdate),
+}
+
+#[derive(Component)]
+#[storage(BTreeStorage)]
+pub struct ActionAttack {
+    pub target: Entity,
+}
+
+#[derive(Component)]
+#[storage(BTreeStorage)]
+pub struct ActionMoveTowards {
+    pub target: Position,
+    pub path: Vec<Position>,
+}
