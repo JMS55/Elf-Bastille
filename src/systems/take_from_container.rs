@@ -12,7 +12,6 @@ impl<'a> System<'a> for TakeFromContainerSystem {
         Read<'a, LazyUpdate>,
         ReadStorage<'a, ActionTakeFromContainer>,
         WriteStorage<'a, Container>,
-        WriteStorage<'a, ContainerChild>,
         ReadStorage<'a, EntityType>,
         ReadStorage<'a, PhysicalProperties>,
     );
@@ -24,36 +23,57 @@ impl<'a> System<'a> for TakeFromContainerSystem {
             lazy_world,
             action_take_from_container_data,
             mut container_data,
-            mut container_child_data,
             entity_type_data,
             physical_properties_data,
         ): Self::SystemData,
     ) {
         microprofile::scope!("systems", "take_from_container");
 
-        // TODO: Don't remove from input storage unless output storage can fit it
         for (self_entity, action_take_from_container) in
             (&entities, &action_take_from_container_data).join()
         {
-            let container = container_data
+            let mut output_container = container_data
+                .get(self_entity)
+                .expect("TODO: ERRRRRRRAAAAAHHHH")
+                .clone();
+            let input_container = container_data
                 .get_mut(action_take_from_container.container)
                 .expect("TODO: ERRRRRRR");
-            for (i, container_child_entity) in container.entities.iter_mut().enumerate() {
+            let mut result = None;
+            for (index, container_child_entity) in input_container.entities.iter().enumerate() {
                 if let Some(entity_type) = entity_type_data.get(*container_child_entity) {
                     if entity_type == &action_take_from_container.entity_type {
-                        lazy_world.remove::<ContainerChild>(*container_child_entity);
-                        container.entities.remove(i);
-                        let self_container = container_data
-                            .get_mut(self_entity)
-                            .expect("TODO: ERRRRRRRAAAAAHHHH");
-                        let entity_properties = physical_properties_data
-                            .get(*container_child_entity)
-                            .expect("TODO: MORE ERR MSGGG");
-                        self_container.stored_volume -= entity_properties.volume;
-                        self_container.stored_weight -= entity_properties.weight;
-                        self_container.entities.push(*container_child_entity);
+                        result = Some((index, *container_child_entity));
                         break;
                     }
+                }
+            }
+            if let Some((index, entity)) = result {
+                let entity_properties = physical_properties_data
+                    .get(entity)
+                    .expect("TODO: MORE ERR MSGGG");
+                let mut passes_check = true;
+                if output_container.stored_volume + entity_properties.volume
+                    > output_container.volume_limit
+                {
+                    passes_check = false;
+                }
+                if let Some(weight_limit) = output_container.weight_limit {
+                    if output_container.stored_weight + entity_properties.weight > weight_limit {
+                        passes_check = false;
+                    }
+                }
+                if passes_check {
+                    lazy_world.remove::<ContainerChild>(entity);
+                    input_container.stored_volume -= entity_properties.volume;
+                    input_container.stored_weight -= entity_properties.weight;
+                    input_container.entities.remove(index);
+                    output_container.stored_volume += entity_properties.volume;
+                    output_container.stored_weight += entity_properties.weight;
+                    output_container.entities.push(entity);
+                    container_data
+                        .insert(self_entity, output_container)
+                        .expect("TODO: ERRSS ERRS");
                 }
             }
         }

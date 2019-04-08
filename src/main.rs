@@ -43,12 +43,20 @@ fn main() {
     let mut ai_system = AISystem;
     let mut insert_into_container_system = InsertIntoContainerSystem;
     let mut take_from_container_system = TakeFromContainerSystem;
+    let mut crafting_system = CraftingSystem;
+    let mut attack_system = AttackSystem;
+    let mut pathfinding_system = PathfindingSystem;
+    // let mut movement_system = MovementSystem;
+    // let mut growth_system = GrowthSystem;
+    // let mut loot_system = LootSystem;
+    // let mut clean_up_dead_system = CleanUpDeadSystem;
+    // let mut render_system = RenderSystem;
     /*
         ✓ AISystem (AI) - Figures out what action to take, and adds the appropriate component
         ✓ InsertIntoContainerSystem (?)
-        TakeFromContainerSystem(?)
-        CraftingSystem (?)
-        AttackSystem (?)
+        ✓ TakeFromContainerSystem(?)
+        ✓ CraftingSystem (?)
+        ✓ AttackSystem (?)
         PathfindingSystem (?)
         MovementSystem (?)
         GrowthSystem (Tree, Option<Displayable>) - Adds time passed to growable component, and then changes Displayable of needed things
@@ -80,10 +88,11 @@ fn main() {
             world.maintain();
             take_from_container_system.run_now(&world.res);
             world.maintain();
-            // crafting_system.run_now(&world.res);
-            // world.maintain();
-            // attack_system.run_now(&world.res);
-            // pathfinding_system.run_now(&world.res);
+            crafting_system.run_now(&world.res);
+            world.maintain();
+            attack_system.run_now(&world.res);
+            // world.maintain(); TODO: IS THIS NEEDED?
+            pathfinding_system.run_now(&world.res);
             // movementSpeed.run_now(&world.res);
             // growth_system.run_now(&world.res);
             // loot_system.run_now(&world.res);

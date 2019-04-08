@@ -3,7 +3,7 @@ use specs::{Component, Entity, LazyUpdate};
 use specs_derive::Component;
 use std::time::Duration;
 
-#[derive(Component)]
+#[derive(Component, Clone)]
 #[storage(BTreeStorage)]
 pub struct Container {
     // Does not support nesting
@@ -87,7 +87,7 @@ pub struct Loot {
     pub create_loot: fn(&LazyUpdate),
 }
 
-#[derive(Component)]
+#[derive(Component, Copy, Clone, Hash, PartialEq, Eq)]
 #[storage(BTreeStorage)]
 pub struct Position {
     pub x: i64,
