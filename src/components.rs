@@ -1,3 +1,4 @@
+use fixed::types::I32F32;
 use specs::storage::{BTreeStorage, NullStorage};
 use specs::{Component, Entity, LazyUpdate};
 use specs_derive::Component;
@@ -90,13 +91,13 @@ pub struct Loot {
 #[derive(Component, Copy, Clone, Hash, PartialEq, Eq)]
 #[storage(BTreeStorage)]
 pub struct Position {
-    pub x: i64,
-    pub y: i64,
-    pub z: i64,
+    pub x: I32F32,
+    pub y: I32F32,
+    pub z: I32F32,
 }
 
 impl Position {
-    pub fn new(x: i64, y: i64, z: i64) -> Self {
+    pub fn new(x: I32F32, y: I32F32, z: I32F32) -> Self {
         Self { x, y, z }
     }
 }
@@ -108,8 +109,7 @@ pub struct MarkedForDeath;
 #[derive(Component)]
 #[storage(BTreeStorage)]
 pub struct MovementInfo {
-    pub speed: i64,
-    pub size: i64,
+    pub speed: I32F32,
 }
 
 #[derive(Component, Default)]

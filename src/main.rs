@@ -1,4 +1,5 @@
 use components::*;
+use glium::glutin::dpi::LogicalSize;
 use glium::glutin::{ContextBuilder, Event, EventsLoop, WindowBuilder, WindowEvent};
 use glium::Display;
 use specs::{RunNow, World};
@@ -9,13 +10,22 @@ mod components;
 mod systems;
 
 pub const DELTA_TIME: Duration = Duration::from_nanos(16700000);
+pub const WORLD_SIZE: f32 = 11.0;
+pub const TEXTURE_SIZE: f32 = 48.0;
+pub const NUMBER_OF_TEXTURES: f32 = 6.0;
 
 fn main() {
     microprofile::init!();
     microprofile::set_enable_all_groups!(true);
 
     let mut event_loop = EventsLoop::new();
-    let window = WindowBuilder::new().with_title("Elf Bastille");
+    let window = WindowBuilder::new()
+        .with_dimensions(LogicalSize::new(
+            (WORLD_SIZE * TEXTURE_SIZE) as f64,
+            (WORLD_SIZE * TEXTURE_SIZE) as f64,
+        ))
+        .with_resizable(false)
+        .with_title("Elf Bastille");
     let context = ContextBuilder::new().with_vsync(true).with_srgb(true);
     let display = Display::new(window, context, &event_loop).expect("Could not create Display");
 
@@ -39,25 +49,57 @@ fn main() {
     world.register::<Position>();
     world.register::<Walkable>();
 
+    // TODO: Temporary, remove soon
+    use fixed::types::I32F32;
+    use specs::world::Builder;
+    world
+        .create_entity()
+        .with(Position {
+            x: I32F32::from_float(0.5),
+            y: I32F32::from(0),
+            z: I32F32::from(1),
+        })
+        .with(Displayable {
+            texture_atlas_index: 3,
+        })
+        .build();
+    for x in -5..=5 {
+        for y in -5..=5 {
+            let texture_atlas_index = (x as u32) & 1;
+            world
+                .create_entity()
+                .with(Position {
+                    x: I32F32::from(x),
+                    y: I32F32::from(y),
+                    z: I32F32::from(0),
+                })
+                .with(Displayable {
+                    texture_atlas_index,
+                })
+                .build();
+        }
+    }
+
     // TODO: Create systems
+    // TODO: Action systems remove components at the end
     let mut ai_system = AISystem;
     let mut insert_into_container_system = InsertIntoContainerSystem;
     let mut take_from_container_system = TakeFromContainerSystem;
     let mut crafting_system = CraftingSystem;
     let mut attack_system = AttackSystem;
     let mut pathfinding_system = PathfindingSystem;
-    // let mut movement_system = MovementSystem;
+    let mut movement_system = MovementSystem;
     // let mut growth_system = GrowthSystem;
     // let mut loot_system = LootSystem;
     // let mut clean_up_dead_system = CleanUpDeadSystem;
-    // let mut render_system = RenderSystem;
+    let mut render_system = RenderSystem::new(display);
     /*
         ✓ AISystem (AI) - Figures out what action to take, and adds the appropriate component
         ✓ InsertIntoContainerSystem (?)
         ✓ TakeFromContainerSystem(?)
         ✓ CraftingSystem (?)
         ✓ AttackSystem (?)
-        PathfindingSystem (?)
+        ✓ PathfindingSystem (?)
         MovementSystem (?)
         GrowthSystem (Tree, Option<Displayable>) - Adds time passed to growable component, and then changes Displayable of needed things
         LootSystem (Loot)
@@ -93,16 +135,16 @@ fn main() {
             attack_system.run_now(&world.res);
             // world.maintain(); TODO: IS THIS NEEDED?
             pathfinding_system.run_now(&world.res);
-            // movementSpeed.run_now(&world.res);
+            movement_system.run_now(&world.res);
             // growth_system.run_now(&world.res);
             // loot_system.run_now(&world.res);
-            //world.maintain();
+            // world.maintain();
             // clean_up_dead_system.run_now(&world.res);
             // world.maintain();
             accumulator -= DELTA_TIME;
         }
 
-        // TODO: Render
+        render_system.run_now(&world.res);
 
         microprofile::flip!();
     }
