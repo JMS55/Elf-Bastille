@@ -59,8 +59,8 @@ fn main() {
         .create_entity()
         .with(Position {
             x: I32F32::from_float(0.5),
-            y: I32F32::from(0),
-            z: I32F32::from(1),
+            y: I32F32::from(1),
+            z: I32F32::from(0),
         })
         .with(Displayable {
             texture_atlas_index: 4,
@@ -70,22 +70,22 @@ fn main() {
         .create_entity()
         .with(Position {
             x: I32F32::from_float(0.75),
-            y: I32F32::from(0),
-            z: I32F32::from(2),
+            y: I32F32::from(2),
+            z: I32F32::from(0),
         })
         .with(Displayable {
             texture_atlas_index: 0,
         })
         .build();
     for x in -5..=5 {
-        for y in -5..=5 {
-            let texture_atlas_index = (x + y) as u32 & 1;
+        for z in -5..=5 {
+            let texture_atlas_index = (x + z) as u32 & 1;
             world
                 .create_entity()
                 .with(Position {
                     x: I32F32::from(x),
-                    y: I32F32::from(y),
-                    z: I32F32::from(0),
+                    y: I32F32::from(0),
+                    z: I32F32::from(z),
                 })
                 .with(Displayable {
                     texture_atlas_index,
