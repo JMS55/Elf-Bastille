@@ -26,7 +26,10 @@ fn main() {
         ))
         .with_resizable(false)
         .with_title("Elf Bastille");
-    let context = ContextBuilder::new().with_vsync(true).with_srgb(true);
+    let context = ContextBuilder::new()
+        .with_vsync(true)
+        .with_srgb(true)
+        .with_depth_buffer(24);;
     let display = Display::new(window, context, &event_loop).expect("Could not create Display");
 
     let mut world = World::new();
@@ -60,12 +63,23 @@ fn main() {
             z: I32F32::from(1),
         })
         .with(Displayable {
-            texture_atlas_index: 3,
+            texture_atlas_index: 4,
+        })
+        .build();
+    world
+        .create_entity()
+        .with(Position {
+            x: I32F32::from_float(0.75),
+            y: I32F32::from(0),
+            z: I32F32::from(2),
+        })
+        .with(Displayable {
+            texture_atlas_index: 0,
         })
         .build();
     for x in -5..=5 {
         for y in -5..=5 {
-            let texture_atlas_index = (x as u32) & 1;
+            let texture_atlas_index = (x + y) as u32 & 1;
             world
                 .create_entity()
                 .with(Position {

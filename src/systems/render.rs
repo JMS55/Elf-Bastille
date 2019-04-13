@@ -4,8 +4,8 @@ use glium::index::PrimitiveType;
 use glium::texture::{RawImage2d, SrgbTexture2d};
 use glium::uniforms::{MagnifySamplerFilter, Sampler};
 use glium::{
-    implement_vertex, uniform, Blend, Display, DrawParameters, IndexBuffer, Program, Surface,
-    VertexBuffer,
+    implement_vertex, uniform, Blend, Depth, DepthTest, Display, DrawParameters, IndexBuffer,
+    Program, Surface, VertexBuffer,
 };
 use microprofile::scope;
 use rayon::iter::ParallelIterator;
@@ -60,6 +60,9 @@ impl RenderSystem {
 
             void main() {
                 pixel = texture(texture_atlas, v_texture);
+                if (pixel.a < 0.5) {
+                    discard;
+                }
             }
         "#;
         let program = Program::from_source(&display, &vertex_shader_src, fragment_shader_src, None)
@@ -69,19 +72,19 @@ impl RenderSystem {
             &display,
             &[
                 TemplateVertex {
-                    initial: [1.0 / WORLD_SIZE, 1.0 / WORLD_SIZE, 1.0 / WORLD_SIZE],
+                    initial: [1.0 / WORLD_SIZE, 1.0 / WORLD_SIZE, 0.0],
                     texture: [0.0, 1.0],
                 },
                 TemplateVertex {
-                    initial: [-1.0 / WORLD_SIZE, 1.0 / WORLD_SIZE, 1.0 / WORLD_SIZE],
+                    initial: [-1.0 / WORLD_SIZE, 1.0 / WORLD_SIZE, 0.0],
                     texture: [1.0 / NUMBER_OF_TEXTURES as f32, 1.0],
                 },
                 TemplateVertex {
-                    initial: [1.0 / WORLD_SIZE, -1.0 / WORLD_SIZE, 1.0 / WORLD_SIZE],
+                    initial: [1.0 / WORLD_SIZE, -1.0 / WORLD_SIZE, 0.0],
                     texture: [0.0, 0.0],
                 },
                 TemplateVertex {
-                    initial: [-1.0 / WORLD_SIZE, -1.0 / WORLD_SIZE, 1.0 / WORLD_SIZE],
+                    initial: [-1.0 / WORLD_SIZE, -1.0 / WORLD_SIZE, 0.0],
                     texture: [1.0 / NUMBER_OF_TEXTURES as f32, 0.0],
                 },
             ],
@@ -108,14 +111,14 @@ impl<'a> System<'a> for RenderSystem {
         microprofile::scope!("systems", "render");
 
         let mut draw_target = self.display.draw();
-        draw_target.clear_color_srgb(1.00, 0.40, 0.70, 1.00);
+        draw_target.clear_color_srgb_and_depth((1.00, 0.40, 0.70, 1.00), 1.00);
         let instance_data = (&position_data, &displayable_data)
             .par_join()
             .map(|(position, displayable)| InstanceData {
                 instance: [
                     2.0 * position.x.to_float::<f32>() / WORLD_SIZE,
                     2.0 * position.y.to_float::<f32>() / WORLD_SIZE,
-                    position.z.to_float::<f32>() / WORLD_SIZE, // TODO: Fix Z ordering
+                    -position.z.to_float::<f32>() / WORLD_SIZE,
                 ],
                 texture_atlas_index: displayable.texture_atlas_index as f32,
             })
@@ -123,6 +126,11 @@ impl<'a> System<'a> for RenderSystem {
         let instances = VertexBuffer::new(&self.display, &instance_data)
             .expect("Failed to create vertex buffer");
         let draw_parameters = DrawParameters {
+            depth: Depth {
+                test: DepthTest::IfLess,
+                write: true,
+                ..Default::default()
+            },
             blend: Blend::alpha_blending(),
             multisampling: false,
             dithering: false,
