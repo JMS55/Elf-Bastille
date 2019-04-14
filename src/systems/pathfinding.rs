@@ -21,18 +21,20 @@ impl<'a> System<'a> for PathfindingSystem {
         (&mut action_move_towards_data, &position_data)
             .par_join()
             .for_each(|(action_move_towards, position)| {
+                let position = position.floor();
                 if let Some(goal) = action_move_towards
                     .target
                     .get_adjacent()
                     .iter()
+                    // TODO: Check to make sure each tile is Walkable
                     .find(|position| !obstacles.contains(position))
                 {
                     let mut frontier = BinaryHeap::new();
                     let mut came_from = HashMap::new();
                     let mut cost_so_far = HashMap::new();
-                    frontier.push(FrontierState::new(*position, I32F32::from(0)));
-                    came_from.insert(*position, None);
-                    cost_so_far.insert(*position, I32F32::from(0));
+                    frontier.push(FrontierState::new(position, I32F32::from(0)));
+                    came_from.insert(position, None);
+                    cost_so_far.insert(position, I32F32::from(0));
 
                     while !frontier.is_empty() {
                         let visiting = frontier.pop().unwrap();
@@ -45,6 +47,7 @@ impl<'a> System<'a> for PathfindingSystem {
                             .position
                             .get_valid_neighbors(&obstacles)
                             .into_iter()
+                            // TODO: Check to make sure each tile is Walkable
                             .filter(|adjacent| !obstacles.contains(adjacent))
                         {
                             let new_cost = cost_so_far[&visiting.position] + I32F32::from(1);
@@ -60,10 +63,11 @@ impl<'a> System<'a> for PathfindingSystem {
                     }
 
                     let mut current = *goal;
-                    while current != *position {
+                    while current != position {
                         action_move_towards.path.push(current);
                         current = came_from[&current].unwrap().position;
                     }
+                    action_move_towards.path.reverse();
                 }
             });
     }
@@ -83,16 +87,16 @@ impl Position {
         let mut neighbors = Vec::new();
         for adjacent in self.get_adjacent().iter() {
             if !obstacles.contains(adjacent) {
-                let below = Self::new(adjacent.x, adjacent.z, adjacent.y - I32F32::from(1));
+                let below = Self::new(adjacent.x, adjacent.y - I32F32::from(1), adjacent.z);
                 if obstacles.contains(&below) {
                     neighbors.push(*adjacent);
                 } else {
                     neighbors.push(below);
                 }
             } else {
-                let above_self = Self::new(self.x, self.z, self.y + I32F32::from(1));
+                let above_self = Self::new(self.x, self.y + I32F32::from(1), self.z);
                 let above_adjacent =
-                    Self::new(adjacent.x, adjacent.z, adjacent.y + I32F32::from(1));
+                    Self::new(adjacent.x, adjacent.y + I32F32::from(1), adjacent.z);
                 if !obstacles.contains(&above_self) && !obstacles.contains(&above_adjacent) {
                     neighbors.push(above_adjacent);
                 }
@@ -106,7 +110,7 @@ impl Position {
     }
 }
 
-#[derive(Copy, Clone, PartialEq, Eq)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
 struct FrontierState {
     position: Position,
     cost: I32F32,

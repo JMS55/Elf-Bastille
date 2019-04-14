@@ -12,7 +12,7 @@ mod systems;
 pub const DELTA_TIME: Duration = Duration::from_nanos(16700000);
 pub const WORLD_SIZE: f32 = 11.0;
 pub const TEXTURE_SIZE: f32 = 48.0;
-pub const NUMBER_OF_TEXTURES: f32 = 6.0;
+pub const NUMBER_OF_TEXTURES: f32 = 7.0;
 
 fn main() {
     microprofile::init!();
@@ -53,44 +53,84 @@ fn main() {
     world.register::<Walkable>();
 
     // TODO: Temporary, remove soon
-    use fixed::types::I32F32;
-    use specs::world::Builder;
-    world
-        .create_entity()
-        .with(Position {
-            x: I32F32::from_float(0.5),
-            y: I32F32::from(1),
-            z: I32F32::from(0),
-        })
-        .with(Displayable {
-            texture_atlas_index: 4,
-        })
-        .build();
-    world
-        .create_entity()
-        .with(Position {
-            x: I32F32::from_float(0.75),
-            y: I32F32::from(2),
-            z: I32F32::from(0),
-        })
-        .with(Displayable {
-            texture_atlas_index: 0,
-        })
-        .build();
-    for x in -5..=5 {
-        for z in -5..=5 {
-            let texture_atlas_index = (x + z) as u32 & 1;
-            world
-                .create_entity()
-                .with(Position {
-                    x: I32F32::from(x),
-                    y: I32F32::from(0),
-                    z: I32F32::from(z),
-                })
-                .with(Displayable {
-                    texture_atlas_index,
-                })
-                .build();
+    {
+        use fixed::types::I32F32;
+        use specs::world::{Builder, Entity, LazyUpdate};
+
+        fn elf_set_action(self_entity: Entity, lazy_update: &LazyUpdate) {
+            lazy_update.insert(
+                self_entity,
+                ActionMoveTowards {
+                    path: Vec::new(),
+                    target: Position {
+                        x: I32F32::from(3),
+                        y: I32F32::from(1),
+                        z: I32F32::from(0),
+                    },
+                },
+            );
+        }
+        world
+            .create_entity()
+            .with(Position {
+                x: I32F32::from(-3),
+                y: I32F32::from(1),
+                z: I32F32::from(0),
+            })
+            .with(MovementInfo {
+                speed: I32F32::from_float(1.0 / 60.0),
+            })
+            .with(AI {
+                set_action: elf_set_action,
+            })
+            .with(Displayable {
+                texture_atlas_index: 0,
+            })
+            .build();
+
+        world
+            .create_entity()
+            .with(Position {
+                x: I32F32::from(3),
+                y: I32F32::from(1),
+                z: I32F32::from(0),
+            })
+            .with(Displayable {
+                texture_atlas_index: 1,
+            })
+            .build();
+
+        for z in -3..=3 {
+            for y in 1..=2 {
+                world
+                    .create_entity()
+                    .with(Position {
+                        x: I32F32::from(0),
+                        y: I32F32::from(y),
+                        z: I32F32::from(z),
+                    })
+                    .with(Displayable {
+                        texture_atlas_index: 2,
+                    })
+                    .build();
+            }
+        }
+
+        for x in -5..=5 {
+            for z in -5..=5 {
+                world
+                    .create_entity()
+                    .with(Position {
+                        x: I32F32::from(x),
+                        y: I32F32::from(0),
+                        z: I32F32::from(z),
+                    })
+                    .with(Walkable)
+                    .with(Displayable {
+                        texture_atlas_index: 6,
+                    })
+                    .build();
+            }
         }
     }
 
@@ -114,7 +154,7 @@ fn main() {
         ✓ CraftingSystem (?)
         ✓ AttackSystem (?)
         ✓ PathfindingSystem (?)
-        MovementSystem (?)
+        ✓ MovementSystem (?)
         GrowthSystem (Tree, Option<Displayable>) - Adds time passed to growable component, and then changes Displayable of needed things
         LootSystem (Loot)
         CleanUpDeadSystem (MarkedForDeath, Option<ContainerChild>)

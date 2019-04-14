@@ -158,13 +158,13 @@ impl<'a> System<'a> for RenderSystem {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 struct TemplateVertex {
     initial: [f32; 3],
     texture: [f32; 2],
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug)]
 struct InstanceData {
     instance: [f32; 3],
     texture_atlas_index: f32,

@@ -4,7 +4,7 @@ use specs::{Component, Entity, LazyUpdate};
 use specs_derive::Component;
 use std::time::Duration;
 
-#[derive(Component, Clone)]
+#[derive(Component, Clone, Debug)]
 #[storage(BTreeStorage)]
 pub struct Container {
     // Does not support nesting
@@ -27,19 +27,19 @@ impl Container {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 #[storage(BTreeStorage)]
 pub struct ContainerChild {
     pub parent: Entity,
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 #[storage(BTreeStorage)]
 pub struct Damageable {
     pub durability: u32,
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 #[storage(BTreeStorage)]
 pub struct Growable {
     age: Duration,
@@ -53,14 +53,14 @@ impl Growable {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 #[storage(BTreeStorage)]
 pub struct PhysicalProperties {
     pub volume: u32,
     pub weight: u32,
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 #[storage(BTreeStorage)]
 pub struct Displayable {
     pub texture_atlas_index: u32,
@@ -69,10 +69,10 @@ pub struct Displayable {
 #[derive(Component)]
 #[storage(BTreeStorage)]
 pub struct AI {
-    pub set_action: fn(&LazyUpdate),
+    pub set_action: fn(Entity, &LazyUpdate),
 }
 
-#[derive(Component, PartialEq)]
+#[derive(Component, PartialEq, Debug)]
 #[storage(BTreeStorage)]
 pub enum EntityType {
     Tree,
@@ -88,7 +88,7 @@ pub struct Loot {
     pub create_loot: fn(&LazyUpdate),
 }
 
-#[derive(Component, Copy, Clone, Hash, PartialEq, Eq)]
+#[derive(Component, Copy, Clone, Hash, PartialEq, Eq, Debug)]
 #[storage(BTreeStorage)]
 pub struct Position {
     pub x: I32F32,
@@ -100,13 +100,21 @@ impl Position {
     pub fn new(x: I32F32, y: I32F32, z: I32F32) -> Self {
         Self { x, y, z }
     }
+
+    pub fn floor(self) -> Self {
+        Self {
+            x: self.x.floor(),
+            y: self.y.floor(),
+            z: self.z.floor(),
+        }
+    }
 }
 
 #[derive(Component, Default)]
 #[storage(NullStorage)]
 pub struct MarkedForDeath;
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 #[storage(BTreeStorage)]
 pub struct MovementInfo {
     pub speed: I32F32,
@@ -116,14 +124,14 @@ pub struct MovementInfo {
 #[storage(NullStorage)]
 pub struct Walkable;
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 #[storage(BTreeStorage)]
 pub struct ActionInsertIntoContainer {
     pub entity: Entity,
     pub container: Entity,
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 #[storage(BTreeStorage)]
 pub struct ActionTakeFromContainer {
     pub entity_type: EntityType,
@@ -136,13 +144,13 @@ pub struct ActionCraft {
     pub craft: fn(&LazyUpdate),
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 #[storage(BTreeStorage)]
 pub struct ActionAttack {
     pub target: Entity,
 }
 
-#[derive(Component)]
+#[derive(Component, Debug)]
 #[storage(BTreeStorage)]
 pub struct ActionMoveTowards {
     pub target: Position,
