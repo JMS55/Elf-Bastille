@@ -108,6 +108,14 @@ impl Position {
             z: self.z.floor(),
         }
     }
+
+    pub fn ceil(self) -> Self {
+        Self {
+            x: self.x.ceil(),
+            y: self.y.ceil(),
+            z: self.z.ceil(),
+        }
+    }
 }
 
 #[derive(Component, Default)]

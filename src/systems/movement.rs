@@ -1,8 +1,7 @@
 use crate::components::{ActionMoveTowards, MovementInfo, Position};
-use fixed::types::I32F32;
+use crate::misc::Obstacles;
 use microprofile::scope;
 use specs::{Join, ReadStorage, System, WriteStorage};
-use std::collections::HashSet;
 
 pub struct MovementSystem;
 
@@ -20,10 +19,10 @@ impl<'a> System<'a> for MovementSystem {
         microprofile::scope!("systems", "movement");
 
         // Local copy of positions to use for obstacle detection, should be kept in sync when changing movement entity positions
-        let mut obstacles = (&position_data)
-            .join()
-            .map(|position| position.to_owned())
-            .collect::<HashSet<Position>>();
+        let mut obstacles = Obstacles::new();
+        for position in (&position_data).join() {
+            obstacles.insert(*position);
+        }
 
         let mut data = (
             &mut action_move_towards_data,
@@ -42,17 +41,11 @@ impl<'a> System<'a> for MovementSystem {
         );
 
         for (action_move_towards, position, movement_info) in data {
-            obstacles.remove(position);
+            obstacles.remove(*position);
             let mut move_speed_left = movement_info.speed;
             while let Some(path_node) = action_move_towards.path.pop() {
-                if !path_node
-                    .get_adjacent_3d()
-                    .iter()
-                    // TODO: Check to make sure each tile is Walkable
-                    .filter(|p| p.floor() == *position)
-                    .collect::<Vec<&Position>>()
-                    .is_empty()
-                {
+                // TODO: Check if Walkable
+                if obstacles.contains(path_node) {
                     break;
                 } else {
                     let mut axis = None;
@@ -83,18 +76,5 @@ impl<'a> System<'a> for MovementSystem {
             }
             obstacles.insert(*position);
         }
-    }
-}
-
-impl Position {
-    fn get_adjacent_3d(&self) -> [Self; 6] {
-        [
-            Self::new(self.x + I32F32::from(1), self.y, self.z),
-            Self::new(self.x - I32F32::from(1), self.y, self.z),
-            Self::new(self.x, self.y + I32F32::from(1), self.z),
-            Self::new(self.x, self.y - I32F32::from(1), self.z),
-            Self::new(self.x, self.y, self.z + I32F32::from(1)),
-            Self::new(self.x, self.y, self.z - I32F32::from(1)),
-        ]
     }
 }

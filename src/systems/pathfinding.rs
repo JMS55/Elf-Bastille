@@ -1,10 +1,11 @@
 use crate::components::{ActionMoveTowards, Position};
+use crate::misc::Obstacles;
 use fixed::types::I32F32;
 use microprofile::scope;
 use rayon::iter::ParallelIterator;
 use specs::{Join, ParJoin, ReadStorage, System, WriteStorage};
 use std::cmp::{Ord, Ordering, PartialOrd};
-use std::collections::{BinaryHeap, HashMap, HashSet};
+use std::collections::{BinaryHeap, HashMap};
 
 pub struct PathfindingSystem;
 
@@ -17,7 +18,11 @@ impl<'a> System<'a> for PathfindingSystem {
     fn run(&mut self, (mut action_move_towards_data, position_data): Self::SystemData) {
         microprofile::scope!("systems", "pathfinding");
 
-        let obstacles = (&position_data).join().collect::<HashSet<&Position>>();
+        let mut obstacles = Obstacles::new();
+        for position in (&position_data).join() {
+            obstacles.insert(*position);
+        }
+
         (&mut action_move_towards_data, &position_data)
             .par_join()
             .for_each(|(action_move_towards, position)| {
@@ -25,9 +30,9 @@ impl<'a> System<'a> for PathfindingSystem {
                 if let Some(goal) = action_move_towards
                     .target
                     .get_adjacent()
-                    .iter()
+                    .into_iter()
                     // TODO: Check to make sure each tile is Walkable
-                    .find(|position| !obstacles.contains(position))
+                    .find(|adjacent_to_target| !obstacles.contains(**adjacent_to_target))
                 {
                     let mut frontier = BinaryHeap::new();
                     let mut came_from = HashMap::new();
@@ -43,13 +48,8 @@ impl<'a> System<'a> for PathfindingSystem {
                             break;
                         }
 
-                        for adjacent in visiting
-                            .position
-                            .get_valid_neighbors(&obstacles)
-                            .into_iter()
-                            // TODO: Check to make sure each tile is Walkable
-                            .filter(|adjacent| !obstacles.contains(adjacent))
-                        {
+                        // TODO: Check to make sure each tile is Walkable
+                        for adjacent in visiting.position.get_valid_neighbors(&obstacles) {
                             let new_cost = cost_so_far[&visiting.position] + I32F32::from(1);
                             if !cost_so_far.contains_key(&adjacent)
                                 || new_cost < cost_so_far[&adjacent]
@@ -67,7 +67,6 @@ impl<'a> System<'a> for PathfindingSystem {
                         action_move_towards.path.push(current);
                         current = came_from[&current].unwrap().position;
                     }
-                    action_move_towards.path.reverse();
                 }
             });
     }
@@ -83,12 +82,12 @@ impl Position {
         ]
     }
 
-    fn get_valid_neighbors(&self, obstacles: &HashSet<&Self>) -> Vec<Self> {
+    fn get_valid_neighbors(&self, obstacles: &Obstacles) -> Vec<Self> {
         let mut neighbors = Vec::new();
         for adjacent in self.get_adjacent().iter() {
-            if !obstacles.contains(adjacent) {
+            if !obstacles.contains(*adjacent) {
                 let below = Self::new(adjacent.x, adjacent.y - I32F32::from(1), adjacent.z);
-                if obstacles.contains(&below) {
+                if obstacles.contains(below) {
                     neighbors.push(*adjacent);
                 } else {
                     neighbors.push(below);
@@ -97,7 +96,7 @@ impl Position {
                 let above_self = Self::new(self.x, self.y + I32F32::from(1), self.z);
                 let above_adjacent =
                     Self::new(adjacent.x, adjacent.y + I32F32::from(1), adjacent.z);
-                if !obstacles.contains(&above_self) && !obstacles.contains(&above_adjacent) {
+                if !obstacles.contains(above_self) && !obstacles.contains(above_adjacent) {
                     neighbors.push(above_adjacent);
                 }
             }
