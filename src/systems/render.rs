@@ -47,7 +47,7 @@ impl RenderSystem {
                 v_texture = texture;
                 v_texture.x += texture_atlas_index / {};
                 vec3 position = initial + instance;
-                gl_Position = vec4(position.x, position.z, position.y, 1.0);
+                gl_Position = vec4(position, 1.0);
             }}
         "#,
             NUMBER_OF_TEXTURES as f32
@@ -73,19 +73,19 @@ impl RenderSystem {
             &display,
             &[
                 TemplateVertex {
-                    initial: [1.0 / WORLD_SIZE, 0.0, 1.0 / WORLD_SIZE],
+                    initial: [1.0 / WORLD_SIZE, 1.0 / WORLD_SIZE, 0.0],
                     texture: [0.0, 1.0],
                 },
                 TemplateVertex {
-                    initial: [-1.0 / WORLD_SIZE, 0.0, 1.0 / WORLD_SIZE],
+                    initial: [-1.0 / WORLD_SIZE, 1.0 / WORLD_SIZE, 0.0],
                     texture: [1.0 / NUMBER_OF_TEXTURES as f32, 1.0],
                 },
                 TemplateVertex {
-                    initial: [1.0 / WORLD_SIZE, 0.0, -1.0 / WORLD_SIZE],
+                    initial: [1.0 / WORLD_SIZE, -1.0 / WORLD_SIZE, 0.0],
                     texture: [0.0, 0.0],
                 },
                 TemplateVertex {
-                    initial: [-1.0 / WORLD_SIZE, 0.0, -1.0 / WORLD_SIZE],
+                    initial: [-1.0 / WORLD_SIZE, -1.0 / WORLD_SIZE, 0.0],
                     texture: [1.0 / NUMBER_OF_TEXTURES as f32, 0.0],
                 },
             ],
@@ -118,8 +118,8 @@ impl<'a> System<'a> for RenderSystem {
             .map(|(position, displayable)| InstanceData {
                 instance: [
                     2.0 * position.x.to_float::<f32>() / WORLD_SIZE,
-                    -position.y.to_float::<f32>() / WORLD_SIZE,
-                    2.0 * position.z.to_float::<f32>() / WORLD_SIZE,
+                    2.0 * position.y.to_float::<f32>() / WORLD_SIZE,
+                    -position.z.to_float::<f32>() / WORLD_SIZE,
                 ],
                 texture_atlas_index: displayable.texture_atlas_index as f32,
             })

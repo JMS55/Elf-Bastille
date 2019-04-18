@@ -12,7 +12,7 @@ mod systems;
 
 pub const DELTA_TIME: Duration = Duration::from_nanos(16700000);
 pub const WORLD_SIZE: f32 = 11.0;
-pub const TEXTURE_SIZE: f32 = 48.0;
+pub const TEXTURE_SIZE: f32 = 32.0;
 pub const NUMBER_OF_TEXTURES: f32 = 7.0;
 
 fn main() {
@@ -65,8 +65,8 @@ fn main() {
                     path: Vec::new(),
                     target: Position {
                         x: I32F32::from(3),
-                        y: I32F32::from(1),
-                        z: I32F32::from(0),
+                        y: I32F32::from(0),
+                        z: I32F32::from(1),
                     },
                 },
             );
@@ -75,8 +75,8 @@ fn main() {
             .create_entity()
             .with(Position {
                 x: I32F32::from(-3),
-                y: I32F32::from(1),
-                z: I32F32::from(0),
+                y: I32F32::from(0),
+                z: I32F32::from(1),
             })
             .with(MovementInfo {
                 speed: I32F32::from_float(1.0 / 60.0),
@@ -93,16 +93,16 @@ fn main() {
             .create_entity()
             .with(Position {
                 x: I32F32::from(3),
-                y: I32F32::from(1),
-                z: I32F32::from(0),
+                y: I32F32::from(0),
+                z: I32F32::from(1),
             })
             .with(Displayable {
                 texture_atlas_index: 1,
             })
             .build();
 
-        for z in -3..=3 {
-            for y in 1..=2 {
+        for y in -3..=3 {
+            for z in 1..=2 {
                 world
                     .create_entity()
                     .with(Position {
@@ -118,13 +118,13 @@ fn main() {
         }
 
         for x in -5..=5 {
-            for z in -5..=5 {
+            for y in -5..=5 {
                 world
                     .create_entity()
                     .with(Position {
                         x: I32F32::from(x),
-                        y: I32F32::from(0),
-                        z: I32F32::from(z),
+                        y: I32F32::from(y),
+                        z: I32F32::from(0),
                     })
                     .with(Walkable)
                     .with(Displayable {

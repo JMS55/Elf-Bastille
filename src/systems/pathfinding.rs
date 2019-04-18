@@ -77,8 +77,8 @@ impl Position {
         [
             Self::new(self.x + I32F32::from(1), self.y, self.z),
             Self::new(self.x - I32F32::from(1), self.y, self.z),
-            Self::new(self.x, self.y, self.z + I32F32::from(1)),
-            Self::new(self.x, self.y, self.z - I32F32::from(1)),
+            Self::new(self.x, self.y + I32F32::from(1), self.z),
+            Self::new(self.x, self.y - I32F32::from(1), self.z),
         ]
     }
 
@@ -86,16 +86,16 @@ impl Position {
         let mut neighbors = Vec::new();
         for adjacent in self.get_adjacent().iter() {
             if !obstacles.contains(*adjacent) {
-                let below = Self::new(adjacent.x, adjacent.y - I32F32::from(1), adjacent.z);
+                let below = Self::new(adjacent.x, adjacent.y, adjacent.z - I32F32::from(1));
                 if obstacles.contains(below) {
                     neighbors.push(*adjacent);
                 } else {
                     neighbors.push(below);
                 }
             } else {
-                let above_self = Self::new(self.x, self.y + I32F32::from(1), self.z);
+                let above_self = Self::new(self.x, self.y, self.z + I32F32::from(1));
                 let above_adjacent =
-                    Self::new(adjacent.x, adjacent.y + I32F32::from(1), adjacent.z);
+                    Self::new(adjacent.x, adjacent.y, adjacent.z + I32F32::from(1));
                 if !obstacles.contains(above_self) && !obstacles.contains(above_adjacent) {
                     neighbors.push(above_adjacent);
                 }
@@ -127,8 +127,8 @@ impl Ord for FrontierState {
             .cost
             .cmp(&self.cost)
             .then_with(|| self.position.x.cmp(&other.position.x))
-            .then_with(|| self.position.z.cmp(&other.position.z))
             .then_with(|| self.position.y.cmp(&other.position.y))
+            .then_with(|| self.position.z.cmp(&other.position.z))
     }
 }
 
