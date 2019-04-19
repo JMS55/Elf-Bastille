@@ -1,4 +1,4 @@
-use crate::components::{ActionMoveTowards, Position};
+use crate::components::{ActionMoveTowards, MovementInfo, Position};
 use crate::misc::Obstacles;
 use fixed::types::I32F32;
 use microprofile::scope;
@@ -13,59 +13,83 @@ impl<'a> System<'a> for PathfindingSystem {
     type SystemData = (
         WriteStorage<'a, ActionMoveTowards>,
         ReadStorage<'a, Position>,
+        ReadStorage<'a, MovementInfo>,
     );
 
-    fn run(&mut self, (mut action_move_towards_data, position_data): Self::SystemData) {
+    fn run(
+        &mut self,
+        (mut action_move_towards_data, position_data, movement_info_data): Self::SystemData,
+    ) {
         microprofile::scope!("systems", "pathfinding");
 
         let mut obstacles = Obstacles::new();
-        for position in (&position_data).join() {
+        for (position, _) in (&position_data, !&movement_info_data).join() {
             obstacles.insert(*position);
         }
 
         (&mut action_move_towards_data, &position_data)
             .par_join()
             .for_each(|(action_move_towards, position)| {
-                let position = position.floor();
-                if let Some(goal) = action_move_towards
-                    .target
-                    .get_adjacent()
-                    .into_iter()
-                    // TODO: Check to make sure each tile is Walkable
-                    .find(|adjacent_to_target| !obstacles.contains(**adjacent_to_target))
-                {
-                    let mut frontier = BinaryHeap::new();
-                    let mut came_from = HashMap::new();
-                    let mut cost_so_far = HashMap::new();
-                    frontier.push(FrontierState::new(position, I32F32::from(0)));
-                    came_from.insert(position, None);
-                    cost_so_far.insert(position, I32F32::from(0));
-
-                    while !frontier.is_empty() {
-                        let visiting = frontier.pop().unwrap();
-
-                        if visiting.position == *goal {
-                            break;
-                        }
-
+                let mut grid_position = None;
+                if action_move_towards.target.x != position.x {
+                    if action_move_towards.target.x > position.x {
+                        grid_position = Some(position.floor());
+                    } else {
+                        grid_position = Some(position.ceil());
+                    }
+                } else if action_move_towards.target.y != position.y {
+                    if action_move_towards.target.y > position.y {
+                        grid_position = Some(position.floor());
+                    } else {
+                        grid_position = Some(position.ceil());
+                    }
+                } else if action_move_towards.target.z != position.z {
+                    if action_move_towards.target.z > position.z {
+                        grid_position = Some(position.floor());
+                    } else {
+                        grid_position = Some(position.ceil());
+                    }
+                }
+                if let Some(grid_position) = grid_position {
+                    if let Some(goal) = action_move_towards
+                        .target
+                        .get_adjacent()
+                        .into_iter()
                         // TODO: Check to make sure each tile is Walkable
-                        for adjacent in visiting.position.get_valid_neighbors(&obstacles) {
-                            let new_cost = cost_so_far[&visiting.position] + I32F32::from(1);
-                            if !cost_so_far.contains_key(&adjacent)
-                                || new_cost < cost_so_far[&adjacent]
-                            {
-                                cost_so_far.insert(adjacent, new_cost);
-                                let priority = new_cost + goal.get_distance_from(&adjacent);
-                                frontier.push(FrontierState::new(adjacent, priority));
-                                came_from.insert(adjacent, Some(visiting));
+                        .find(|adjacent_to_target| !obstacles.contains(**adjacent_to_target))
+                    {
+                        let mut frontier = BinaryHeap::new();
+                        let mut came_from = HashMap::new();
+                        let mut cost_so_far = HashMap::new();
+                        frontier.push(FrontierState::new(grid_position, I32F32::from(0)));
+                        came_from.insert(grid_position, None);
+                        cost_so_far.insert(grid_position, I32F32::from(0));
+
+                        while !frontier.is_empty() {
+                            let visiting = frontier.pop().unwrap();
+
+                            if visiting.position == *goal {
+                                break;
+                            }
+
+                            for adjacent in visiting.position.get_valid_neighbors(&obstacles) {
+                                let new_cost = cost_so_far[&visiting.position] + I32F32::from(1);
+                                if !cost_so_far.contains_key(&adjacent)
+                                    || new_cost < cost_so_far[&adjacent]
+                                {
+                                    cost_so_far.insert(adjacent, new_cost);
+                                    let priority = new_cost + goal.get_distance_from(&adjacent);
+                                    frontier.push(FrontierState::new(adjacent, priority));
+                                    came_from.insert(adjacent, Some(visiting));
+                                }
                             }
                         }
-                    }
 
-                    let mut current = *goal;
-                    while current != position {
-                        action_move_towards.path.push(current);
-                        current = came_from[&current].unwrap().position;
+                        let mut current = *goal;
+                        while current != grid_position {
+                            action_move_towards.path.push(current);
+                            current = came_from[&current].unwrap().position;
+                        }
                     }
                 }
             });
@@ -85,20 +109,10 @@ impl Position {
     fn get_valid_neighbors(&self, obstacles: &Obstacles) -> Vec<Self> {
         let mut neighbors = Vec::new();
         for adjacent in self.get_adjacent().iter() {
-            if !obstacles.contains(*adjacent) {
-                let below = Self::new(adjacent.x, adjacent.y, adjacent.z - I32F32::from(1));
-                if obstacles.contains(below) {
-                    neighbors.push(*adjacent);
-                } else {
-                    neighbors.push(below);
-                }
-            } else {
-                let above_self = Self::new(self.x, self.y, self.z + I32F32::from(1));
-                let above_adjacent =
-                    Self::new(adjacent.x, adjacent.y, adjacent.z + I32F32::from(1));
-                if !obstacles.contains(above_self) && !obstacles.contains(above_adjacent) {
-                    neighbors.push(above_adjacent);
-                }
+            let below = Self::new(adjacent.x, adjacent.y, adjacent.z - I32F32::from(1));
+            // TODO: Check to make sure below is Walkable
+            if !obstacles.contains(*adjacent) && obstacles.contains(below) {
+                neighbors.push(*adjacent);
             }
         }
         neighbors

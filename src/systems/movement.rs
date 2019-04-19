@@ -51,11 +51,9 @@ impl<'a> System<'a> for MovementSystem {
                     let mut axis = None;
                     if path_node.x != position.x {
                         axis = Some((&mut position.x, path_node.x));
-                    }
-                    if path_node.y != position.y {
+                    } else if path_node.y != position.y {
                         axis = Some((&mut position.y, path_node.y));
-                    }
-                    if path_node.z != position.z {
+                    } else if path_node.z != position.z {
                         axis = Some((&mut position.z, path_node.z));
                     }
                     if let Some(axis) = axis {
