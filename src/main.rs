@@ -13,7 +13,7 @@ mod systems;
 pub const DELTA_TIME: Duration = Duration::from_nanos(16700000);
 pub const WORLD_SIZE: f32 = 11.0;
 pub const TEXTURE_SIZE: f32 = 32.0;
-pub const NUMBER_OF_TEXTURES: f32 = 7.0;
+pub const NUMBER_OF_TEXTURES: f32 = 11.0;
 
 fn main() {
     microprofile::init!();
@@ -101,6 +101,19 @@ fn main() {
             })
             .build();
 
+        world
+            .create_entity()
+            .with(Position {
+                x: I32F32::from(-5),
+                y: I32F32::from(0),
+                z: I32F32::from(1),
+            })
+            .with(Growable::new())
+            .with(Displayable {
+                texture_atlas_index: 8,
+            })
+            .build();
+
         for y in -3..=3 {
             for z in 1..=2 {
                 world
@@ -135,8 +148,6 @@ fn main() {
         }
     }
 
-    // TODO: Create systems
-    // TODO: Action systems remove components at the end
     let mut ai_system = AISystem;
     let mut insert_into_container_system = InsertIntoContainerSystem;
     let mut take_from_container_system = TakeFromContainerSystem;
@@ -144,23 +155,10 @@ fn main() {
     let mut attack_system = AttackSystem;
     let mut pathfinding_system = PathfindingSystem;
     let mut movement_system = MovementSystem;
-    // let mut growth_system = GrowthSystem;
-    // let mut loot_system = LootSystem;
-    // let mut clean_up_dead_system = CleanUpDeadSystem;
+    let mut growth_system = GrowthSystem;
+    let mut loot_system = LootSystem;
+    let mut clean_up_dead_system = CleanUpDeadSystem;
     let mut render_system = RenderSystem::new(display);
-    /*
-        ✓ AISystem (AI) - Figures out what action to take, and adds the appropriate component
-        ✓ InsertIntoContainerSystem (?)
-        ✓ TakeFromContainerSystem(?)
-        ✓ CraftingSystem (?)
-        ✓ AttackSystem (?)
-        ✓ PathfindingSystem (?)
-        ✓ MovementSystem (?)
-        GrowthSystem (Tree, Option<Displayable>) - Adds time passed to growable component, and then changes Displayable of needed things
-        LootSystem (Loot)
-        CleanUpDeadSystem (MarkedForDeath, Option<ContainerChild>)
-        Render (Displayable, Position)
-    */
 
     let mut current_time = Instant::now();
     let mut accumulator = Duration::from_nanos(0);
@@ -178,7 +176,6 @@ fn main() {
         accumulator += new_time - current_time;
         current_time = new_time;
         while accumulator >= DELTA_TIME {
-            // TODO: Run systems
             ai_system.run_now(&world.res);
             world.maintain();
             insert_into_container_system.run_now(&world.res);
@@ -188,14 +185,14 @@ fn main() {
             crafting_system.run_now(&world.res);
             world.maintain();
             attack_system.run_now(&world.res);
-            // world.maintain(); TODO: IS THIS NEEDED?
+            world.maintain();
             pathfinding_system.run_now(&world.res);
             movement_system.run_now(&world.res);
-            // growth_system.run_now(&world.res);
-            // loot_system.run_now(&world.res);
-            // world.maintain();
-            // clean_up_dead_system.run_now(&world.res);
-            // world.maintain();
+            growth_system.run_now(&world.res);
+            loot_system.run_now(&world.res);
+            world.maintain();
+            clean_up_dead_system.run_now(&world.res);
+            world.maintain();
             accumulator -= DELTA_TIME;
         }
 

@@ -2,6 +2,7 @@ use crate::components::{ActionInsertIntoContainer, Container, ContainerChild, Ph
 use microprofile::scope;
 use specs::{Entities, Join, LazyUpdate, Read, ReadStorage, System, WriteStorage};
 
+// TODO: Redo this system. First remove from source container, then add to target container
 pub struct InsertIntoContainerSystem;
 
 impl<'a> System<'a> for InsertIntoContainerSystem {

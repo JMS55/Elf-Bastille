@@ -34,11 +34,11 @@ impl<'a> System<'a> for TakeFromContainerSystem {
         {
             let mut output_container = container_data
                 .get(self_entity)
-                .expect("TODO: ERRRRRRRAAAAAHHHH")
+                .expect("Could not get output Container during TakeFromContainerSystem")
                 .clone();
             let input_container = container_data
                 .get_mut(action_take_from_container.container)
-                .expect("TODO: ERRRRRRR");
+                .expect("Could not get input Container during TakeFromContainerSystem");
             let mut result = None;
             for (index, container_child_entity) in input_container.entities.iter().enumerate() {
                 if let Some(entity_type) = entity_type_data.get(*container_child_entity) {
@@ -49,9 +49,9 @@ impl<'a> System<'a> for TakeFromContainerSystem {
                 }
             }
             if let Some((index, entity)) = result {
-                let entity_properties = physical_properties_data
-                    .get(entity)
-                    .expect("TODO: MORE ERR MSGGG");
+                let entity_properties = physical_properties_data.get(entity).expect(
+                    "Could not get entity PhysicalProperties during TakeFromContainerSystem",
+                );
                 let mut passes_check = true;
                 if output_container.stored_volume + entity_properties.volume
                     > output_container.volume_limit
@@ -73,9 +73,10 @@ impl<'a> System<'a> for TakeFromContainerSystem {
                     output_container.entities.push(entity);
                     container_data
                         .insert(self_entity, output_container)
-                        .expect("TODO: ERRSS ERRS");
+                        .expect("Could not insert output Container component during TakeFromContainerSystem");
                 }
             }
+            lazy_world.remove::<ActionTakeFromContainer>(self_entity);
         }
     }
 }

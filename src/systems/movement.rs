@@ -44,7 +44,6 @@ impl<'a> System<'a> for MovementSystem {
             obstacles.remove(*position);
             let mut move_speed_left = movement_info.speed;
             while let Some(path_node) = action_move_towards.path.pop() {
-                // TODO: Check if Walkable
                 if obstacles.contains(path_node) {
                     break;
                 } else {

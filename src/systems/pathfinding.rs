@@ -55,7 +55,6 @@ impl<'a> System<'a> for PathfindingSystem {
                         .target
                         .get_adjacent()
                         .into_iter()
-                        // TODO: Check to make sure each tile is Walkable
                         .find(|adjacent_to_target| !obstacles.contains(**adjacent_to_target))
                     {
                         let mut frontier = BinaryHeap::new();

@@ -42,7 +42,7 @@ pub struct Damageable {
 #[derive(Component, Debug)]
 #[storage(BTreeStorage)]
 pub struct Growable {
-    age: Duration,
+    pub age: Duration,
 }
 
 impl Growable {

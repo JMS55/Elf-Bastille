@@ -1,7 +1,10 @@
 mod ai;
 mod attack;
+mod clean_up_dead;
 mod crafting;
+mod growth;
 mod insert_into_container;
+mod loot;
 mod movement;
 mod pathfinding;
 mod render;
@@ -9,8 +12,11 @@ mod take_from_container;
 
 pub use ai::AISystem;
 pub use attack::AttackSystem;
+pub use clean_up_dead::CleanUpDeadSystem;
 pub use crafting::CraftingSystem;
+pub use growth::GrowthSystem;
 pub use insert_into_container::InsertIntoContainerSystem;
+pub use loot::LootSystem;
 pub use movement::MovementSystem;
 pub use pathfinding::PathfindingSystem;
 pub use render::RenderSystem;
