@@ -1,10 +1,10 @@
-use crate::components::{Tree, TreeGrowthStage, WorldLocation};
+use crate::components::{LocationInfo, Tree, TreeGrowthStage};
 use specs::{Join, System, WriteStorage};
 
 pub struct TreeGrowthSystem;
 
 impl<'a> System<'a> for TreeGrowthSystem {
-    type SystemData = (WriteStorage<'a, Tree>, WriteStorage<'a, WorldLocation>);
+    type SystemData = (WriteStorage<'a, Tree>, WriteStorage<'a, LocationInfo>);
 
     fn run(&mut self, (mut tree_data, mut location_data): Self::SystemData) {
         for (tree, tree_location) in (&mut tree_data, &mut location_data).join() {

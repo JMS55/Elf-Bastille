@@ -1,4 +1,4 @@
-use crate::components::WorldLocation;
+use crate::components::LocationInfo;
 use crate::{NUMBER_OF_TEXTURES, WORLD_SIZE};
 use glium::index::PrimitiveType;
 use glium::texture::{RawImage2d, SrgbTexture2d};
@@ -105,20 +105,20 @@ impl RenderSystem {
 }
 
 impl<'a> System<'a> for RenderSystem {
-    type SystemData = ReadStorage<'a, WorldLocation>;
+    type SystemData = ReadStorage<'a, LocationInfo>;
 
     fn run(&mut self, location_data: Self::SystemData) {
         let mut draw_target = self.display.draw();
         draw_target.clear_color_srgb_and_depth((1.00, 0.40, 0.70, 1.00), 1.00);
         let instance_data = (&location_data)
             .par_join()
-            .map(|location| InstanceData {
+            .map(|location_info| InstanceData {
                 instance: [
-                    2.0 * location.x.to_float::<f32>() / WORLD_SIZE,
-                    2.0 * location.y.to_float::<f32>() / WORLD_SIZE,
-                    -location.z.to_float::<f32>() / WORLD_SIZE,
+                    2.0 * location_info.location.x.to_float::<f32>() / WORLD_SIZE,
+                    2.0 * location_info.location.y.to_float::<f32>() / WORLD_SIZE,
+                    -location_info.location.z.to_float::<f32>() / WORLD_SIZE,
                 ],
-                texture_atlas_index: location.texture_atlas_index as f32,
+                texture_atlas_index: location_info.texture_atlas_index as f32,
             })
             .collect::<Vec<InstanceData>>();
         let instances = VertexBuffer::new(&self.display, &instance_data)

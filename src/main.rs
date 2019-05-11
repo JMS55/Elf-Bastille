@@ -1,5 +1,4 @@
 use components::*;
-use fixed::types::I32F32;
 use glium::glutin::dpi::LogicalSize;
 use glium::glutin::{ContextBuilder, Event, EventsLoop, WindowBuilder, WindowEvent};
 use glium::Display;
@@ -32,7 +31,7 @@ fn main() {
     let display = Display::new(window, context, &event_loop).expect("Could not create Display");
 
     let mut world = World::new();
-    world.register::<WorldLocation>();
+    world.register::<LocationInfo>();
     world.register::<Tree>();
     world.register::<Dirt>();
 
@@ -46,10 +45,8 @@ fn main() {
             world
                 .create_entity()
                 .with(Dirt)
-                .with(WorldLocation {
-                    x: I32F32::from(x),
-                    y: I32F32::from(y),
-                    z: I32F32::from(0),
+                .with(LocationInfo {
+                    location: Location::new(x, y, 0),
                     is_walkable: true,
                     texture_atlas_index: 9,
                 })
