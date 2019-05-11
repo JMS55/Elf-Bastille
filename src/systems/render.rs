@@ -7,7 +7,6 @@ use glium::{
     implement_vertex, uniform, Blend, Depth, DepthTest, Display, DrawParameters, IndexBuffer,
     Program, Surface, VertexBuffer,
 };
-use microprofile::scope;
 use rayon::iter::ParallelIterator;
 use specs::{ParJoin, ReadStorage, System};
 use std::io::Cursor;
@@ -109,8 +108,6 @@ impl<'a> System<'a> for RenderSystem {
     type SystemData = (ReadStorage<'a, Position>, ReadStorage<'a, Displayable>);
 
     fn run(&mut self, (position_data, displayable_data): Self::SystemData) {
-        microprofile::scope!("systems", "render");
-
         let mut draw_target = self.display.draw();
         draw_target.clear_color_srgb_and_depth((1.00, 0.40, 0.70, 1.00), 1.00);
         let instance_data = (&position_data, &displayable_data)
@@ -158,13 +155,13 @@ impl<'a> System<'a> for RenderSystem {
     }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone)]
 struct TemplateVertex {
     initial: [f32; 3],
     texture: [f32; 2],
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone)]
 struct InstanceData {
     instance: [f32; 3],
     texture_atlas_index: f32,
