@@ -32,19 +32,31 @@ impl Location {
     }
 }
 
+#[derive(Component)]
+#[storage(BTreeStorage)]
+pub struct MovementInfo {
+    pub speed: I32F32,
+}
+
 // Entities //
 
-// #[derive(Component)]
-// #[storage(BTreeStorage)]
-// pub struct Elf {}
+#[derive(Component)]
+#[storage(BTreeStorage)]
+pub struct Elf {
+    pub action_queue: Vec<Action>,
+}
 
-/*
-    Elf component stores list of actions
-    At the start of the turn, delete all action components, then add the correct action component
-    Action systems run. If action completed, tell elf to advance actions
+impl Elf {
+    pub fn new() -> Self {
+        Self {
+            action_queue: Vec::new(),
+        }
+    }
 
-    How to represent actions?
-*/
+    pub fn queue_action(&mut self, action: ActionMove) {
+        self.action_queue.push(Action::Move(action));
+    }
+}
 
 #[derive(Component)]
 #[storage(BTreeStorage)]
@@ -75,6 +87,23 @@ pub enum TreeGrowthStage {
 pub struct Dirt;
 
 // Actions //
-// #[derive(Component)]
-// #[storage(BTreeStorage)]
-// pub struct Movement {}
+
+pub enum Action {
+    Move(ActionMove),
+}
+
+#[derive(Component)]
+#[storage(BTreeStorage)]
+pub struct ActionMove {
+    goal: Location,
+    path: Vec<Location>,
+}
+
+impl ActionMove {
+    pub fn new(goal: Location) -> Self {
+        Self {
+            goal,
+            path: Vec::new(),
+        }
+    }
+}

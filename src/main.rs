@@ -31,15 +31,33 @@ fn main() {
     let display = Display::new(window, context, &event_loop).expect("Could not create Display");
 
     let mut world = World::new();
+    // Components //
     world.register::<LocationInfo>();
+    world.register::<MovementInfo>();
+    // Entities //
+    world.register::<Elf>();
     world.register::<Tree>();
     world.register::<Dirt>();
+    // Actions //
+    world.register::<ActionMove>();
 
+    let mut elf_system = ElfSystem;
     let mut tree_growth_system = TreeGrowthSystem;
     let mut create_trees_system = CreateTreesSystem::new();
     let mut render_system = RenderSystem::new(display);
 
     // Test world
+    let mut elf = Elf::new();
+    elf.queue_action(ActionMove::new(Location::new(-8, 10, 1)));
+    world
+        .create_entity()
+        .with(elf)
+        .with(LocationInfo {
+            location: Location::new(0, 0, 1),
+            is_walkable: false,
+            texture_atlas_index: 1,
+        })
+        .build();
     for x in -10..=10 {
         for y in -10..=10 {
             world
@@ -70,6 +88,8 @@ fn main() {
         accumulator += new_time - current_time;
         current_time = new_time;
         while accumulator >= DELTA_TIME {
+            elf_system.run_now(&world.res);
+            world.maintain();
             tree_growth_system.run_now(&world.res);
             create_trees_system.run_now(&world.res);
             world.maintain();
