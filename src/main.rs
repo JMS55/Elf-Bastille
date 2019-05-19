@@ -44,6 +44,8 @@ fn main() {
     let mut elf_system = ElfSystem;
     let mut tree_growth_system = TreeGrowthSystem;
     let mut create_trees_system = CreateTreesSystem::new();
+    let mut pathfind_system = PathfindSystem;
+    let mut movement_system = MovementSystem;
     let mut render_system = RenderSystem::new(display);
 
     // Test world
@@ -52,6 +54,7 @@ fn main() {
     world
         .create_entity()
         .with(elf)
+        .with(MovementInfo::new(1, Duration::from_secs(2)))
         .with(LocationInfo {
             location: Location::new(0, 0, 1),
             is_walkable: false,
@@ -93,6 +96,8 @@ fn main() {
             tree_growth_system.run_now(&world.res);
             create_trees_system.run_now(&world.res);
             world.maintain();
+            pathfind_system.run_now(&world.res);
+            movement_system.run_now(&world.res);
             accumulator -= DELTA_TIME;
         }
 

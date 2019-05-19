@@ -1,6 +1,5 @@
 use crate::components::{Dirt, Location, LocationInfo, Tree};
 use crate::util::Timer;
-use fixed::types::I32F32;
 use specs::{Builder, Entities, Join, LazyUpdate, Read, ReadStorage, System};
 use std::time::Duration;
 
@@ -38,16 +37,11 @@ impl<'a> System<'a> for CreateTreesSystem {
                 }
 
                 // Skip if an entity is above the dirt tile
-                if (&location_data)
-                    .join()
-                    .find(|entity_location| {
-                        entity_location.location.x == dirt_location.location.x
-                            && entity_location.location.y == dirt_location.location.y
-                            && entity_location.location.z
-                                == dirt_location.location.z + I32F32::from(1)
-                    })
-                    .is_some()
-                {
+                if (&location_data).join().any(|entity_location| {
+                    entity_location.location.x == dirt_location.location.x
+                        && entity_location.location.y == dirt_location.location.y
+                        && entity_location.location.z == dirt_location.location.z + 1
+                }) {
                     continue 'dirt_loop;
                 }
 
@@ -69,9 +63,9 @@ impl<'a> System<'a> for CreateTreesSystem {
                 let tree_location = Location::new(
                     dirt_location.location.x,
                     dirt_location.location.y,
-                    dirt_location.location.z + I32F32::from(1),
+                    dirt_location.location.z + 1,
                 );
-                new_tree_locations.push(tree_location.clone());
+                new_tree_locations.push(tree_location);
                 lazy_update
                     .create_entity(&entities)
                     .with(Tree::new())

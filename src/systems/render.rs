@@ -114,9 +114,9 @@ impl<'a> System<'a> for RenderSystem {
             .par_join()
             .map(|location_info| InstanceData {
                 instance: [
-                    2.0 * location_info.location.x.to_float::<f32>() / WORLD_SIZE,
-                    2.0 * location_info.location.y.to_float::<f32>() / WORLD_SIZE,
-                    -location_info.location.z.to_float::<f32>() / WORLD_SIZE,
+                    2.0 * (location_info.location.x as f32) / WORLD_SIZE,
+                    2.0 * (location_info.location.y as f32) / WORLD_SIZE,
+                    (-location_info.location.z as f32) / WORLD_SIZE,
                 ],
                 texture_atlas_index: location_info.texture_atlas_index as f32,
             })

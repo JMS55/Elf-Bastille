@@ -1,5 +1,4 @@
 use crate::util::Timer;
-use fixed::types::I32F32;
 use specs::storage::{BTreeStorage, NullStorage};
 use specs::Component;
 use specs_derive::Component;
@@ -7,7 +6,7 @@ use std::time::Duration;
 
 // Components //
 
-#[derive(Component)]
+#[derive(Component, PartialEq, Eq, Hash)]
 #[storage(BTreeStorage)]
 pub struct LocationInfo {
     pub location: Location,
@@ -15,27 +14,33 @@ pub struct LocationInfo {
     pub texture_atlas_index: u32,
 }
 
-#[derive(Clone)]
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Location {
-    pub x: I32F32,
-    pub y: I32F32,
-    pub z: I32F32,
+    pub x: i32,
+    pub y: i32,
+    pub z: i32,
 }
 
 impl Location {
-    pub fn new<T: Into<I32F32>>(x: T, y: T, z: T) -> Self {
-        Self {
-            x: x.into(),
-            y: y.into(),
-            z: z.into(),
-        }
+    pub fn new(x: i32, y: i32, z: i32) -> Self {
+        Self { x, y, z }
     }
 }
 
 #[derive(Component)]
 #[storage(BTreeStorage)]
 pub struct MovementInfo {
-    pub speed: I32F32,
+    pub tiles_per_move: u32,
+    pub timer: Timer,
+}
+
+impl MovementInfo {
+    pub fn new(tiles_per_move: u32, cooldown_timer: Duration) -> Self {
+        Self {
+            tiles_per_move,
+            timer: Timer::new(cooldown_timer, false),
+        }
+    }
 }
 
 // Entities //
@@ -95,14 +100,16 @@ pub enum Action {
 #[derive(Component)]
 #[storage(BTreeStorage)]
 pub struct ActionMove {
-    goal: Location,
-    path: Vec<Location>,
+    pub goal: Location,
+    pub should_pathfind: bool,
+    pub path: Vec<Location>,
 }
 
 impl ActionMove {
     pub fn new(goal: Location) -> Self {
         Self {
             goal,
+            should_pathfind: true,
             path: Vec::new(),
         }
     }
