@@ -1,4 +1,3 @@
-use crate::util::Timer;
 use specs::storage::{BTreeStorage, NullStorage};
 use specs::Component;
 use specs_derive::Component;
@@ -30,15 +29,15 @@ impl Location {
 #[derive(Component)]
 #[storage(BTreeStorage)]
 pub struct MovementInfo {
-    pub tiles_per_move: u32,
-    pub timer: Timer,
+    pub time_per_move: Duration,
+    pub time_since_last_move: Duration,
 }
 
 impl MovementInfo {
-    pub fn new(tiles_per_move: u32, cooldown_timer: Duration) -> Self {
+    pub fn new(time_per_move: Duration) -> Self {
         Self {
-            tiles_per_move,
-            timer: Timer::new(cooldown_timer, false),
+            time_per_move,
+            time_since_last_move: time_per_move,
         }
     }
 }
@@ -67,14 +66,14 @@ impl Elf {
 #[storage(BTreeStorage)]
 pub struct Tree {
     pub growth_stage: TreeGrowthStage,
-    pub growth_timer: Timer,
+    pub growth_timer: Duration,
 }
 
 impl Tree {
     pub fn new() -> Self {
         Self {
             growth_stage: TreeGrowthStage::Stage1,
-            growth_timer: Timer::new(Duration::from_secs(5), false),
+            growth_timer: Duration::from_secs(0),
         }
     }
 }

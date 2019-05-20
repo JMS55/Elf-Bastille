@@ -1,16 +1,16 @@
 use crate::components::{Dirt, Location, LocationInfo, Tree};
-use crate::util::Timer;
+use crate::DELTA_TIME;
 use specs::{Builder, Entities, Join, LazyUpdate, Read, ReadStorage, System};
 use std::time::Duration;
 
 pub struct CreateTreesSystem {
-    timer: Timer,
+    timer: Duration,
 }
 
 impl CreateTreesSystem {
     pub fn new() -> Self {
         Self {
-            timer: Timer::new(Duration::from_secs(20), true),
+            timer: Duration::from_secs(20),
         }
     }
 }
@@ -28,7 +28,10 @@ impl<'a> System<'a> for CreateTreesSystem {
         &mut self,
         (location_data, tree_data, dirt_data, lazy_update, entities): Self::SystemData,
     ) {
-        if self.timer.triggered() {
+        self.timer += DELTA_TIME;
+        if self.timer >= Duration::from_secs(20) {
+            self.timer = Duration::from_secs(0);
+
             let mut new_tree_locations = Vec::new();
             'dirt_loop: for (dirt_location, _) in (&location_data, &dirt_data).join() {
                 // Randomness skip

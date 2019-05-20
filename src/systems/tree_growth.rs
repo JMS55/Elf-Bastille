@@ -1,5 +1,7 @@
 use crate::components::{LocationInfo, Tree, TreeGrowthStage};
+use crate::DELTA_TIME;
 use specs::{Join, System, WriteStorage};
+use std::time::Duration;
 
 pub struct TreeGrowthSystem;
 
@@ -8,7 +10,10 @@ impl<'a> System<'a> for TreeGrowthSystem {
 
     fn run(&mut self, (mut tree_data, mut location_data): Self::SystemData) {
         for (tree, tree_location) in (&mut tree_data, &mut location_data).join() {
-            if tree.growth_timer.triggered() {
+            tree.growth_timer += DELTA_TIME;
+            if tree.growth_timer >= Duration::from_secs(5) {
+                tree.growth_timer = Duration::from_secs(0);
+
                 match tree.growth_stage {
                     TreeGrowthStage::Stage1 => {
                         tree.growth_stage = TreeGrowthStage::Stage2;

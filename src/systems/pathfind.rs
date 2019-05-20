@@ -37,11 +37,10 @@ impl<'a> System<'a> for PathfindSystem {
                     let new_cost = cost_so_far[&visiting.location] + cost;
                     if !cost_so_far.contains_key(&neighbor) || new_cost < cost_so_far[&neighbor] {
                         cost_so_far.insert(neighbor, new_cost);
-                        let priority = (new_cost as f32
-                            + ((neighbor.x - action_move.goal.x).abs() as f32
-                                + (neighbor.y - action_move.goal.y).abs() as f32
-                                + (neighbor.z - action_move.goal.z).abs() as f32 / 2.0))
-                            as u32;
+                        let priority = new_cost
+                            + (neighbor.x - action_move.goal.x).abs() as u32
+                            + (neighbor.y - action_move.goal.y).abs() as u32
+                            + (neighbor.z - action_move.goal.z).abs() as u32 * 2;
                         frontier.push(FrontierNode::new(neighbor, priority));
                         came_from.insert(neighbor, Some(visiting.location));
                     }
@@ -94,8 +93,10 @@ impl FrontierNode {
             } else {
                 let below_adjacent = Location::new(adjacent.x, adjacent.y, adjacent.z - 1);
                 let below_below_adjacent = Location::new(adjacent.x, adjacent.y, adjacent.z - 2);
-                if obstacles.get(&adjacent) == Some(&true) {
-                    neighbors.push((adjacent, 1));
+                if obstacles.contains_key(&below_adjacent) {
+                    if obstacles[&below_adjacent] {
+                        neighbors.push((adjacent, 1));
+                    }
                 } else if obstacles.get(&below_below_adjacent) == Some(&true) {
                     neighbors.push((below_adjacent, 2));
                 }
@@ -110,7 +111,6 @@ impl Ord for FrontierNode {
         other
             .cost
             .cmp(&self.cost)
-            .reverse()
             .then_with(|| self.location.cmp(&other.location))
     }
 }

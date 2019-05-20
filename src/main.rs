@@ -8,7 +8,6 @@ use systems::*;
 
 mod components;
 mod systems;
-mod util;
 
 pub const DELTA_TIME: Duration = Duration::from_nanos(16700000);
 pub const WORLD_SIZE: f32 = 21.0;
@@ -54,7 +53,7 @@ fn main() {
     world
         .create_entity()
         .with(elf)
-        .with(MovementInfo::new(1, Duration::from_secs(2)))
+        .with(MovementInfo::new(Duration::from_secs(1)))
         .with(LocationInfo {
             location: Location::new(0, 0, 1),
             is_walkable: false,
@@ -98,6 +97,7 @@ fn main() {
             world.maintain();
             pathfind_system.run_now(&world.res);
             movement_system.run_now(&world.res);
+            world.maintain();
             accumulator -= DELTA_TIME;
         }
 
