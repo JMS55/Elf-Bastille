@@ -50,10 +50,11 @@ fn main() {
     // Test world
     let mut elf = Elf::new();
     elf.queue_action(ActionMove::new(Location::new(-8, 10, 1)));
+    elf.queue_action(ActionMove::new(Location::new(7, -3, 1)));
     world
         .create_entity()
         .with(elf)
-        .with(MovementInfo::new(Duration::from_secs(1)))
+        .with(MovementInfo::new(Duration::from_millis(333)))
         .with(LocationInfo {
             location: Location::new(0, 0, 1),
             is_walkable: false,

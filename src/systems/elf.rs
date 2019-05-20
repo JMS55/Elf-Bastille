@@ -13,8 +13,10 @@ impl<'a> System<'a> for ElfSystem {
 
     fn run(&mut self, (mut elf_data, action_move_data, lazy_update, entities): Self::SystemData) {
         for (elf, elf_entity, _) in (&mut elf_data, &entities, !&action_move_data).join() {
-            match elf.action_queue.remove(0) {
-                Action::Move(action) => lazy_update.insert(elf_entity, action),
+            if !elf.action_queue.is_empty() {
+                match elf.action_queue.remove(0) {
+                    Action::Move(action) => lazy_update.insert(elf_entity, action),
+                }
             }
         }
     }
