@@ -1,16 +1,20 @@
 use crate::components::{Dirt, Location, LocationInfo, Tree};
 use crate::DELTA_TIME;
+use rand::Rng;
+use rand_pcg::Mcg128Xsl64;
 use specs::{Builder, Entities, Join, LazyUpdate, Read, ReadStorage, System};
 use std::time::Duration;
 
 pub struct CreateTreesSystem {
     timer: Duration,
+    rng: Mcg128Xsl64,
 }
 
 impl CreateTreesSystem {
     pub fn new() -> Self {
         Self {
             timer: Duration::from_secs(20),
+            rng: Mcg128Xsl64::new(0xcafef00dd15ea5e5),
         }
     }
 }
@@ -35,7 +39,7 @@ impl<'a> System<'a> for CreateTreesSystem {
             let mut new_tree_locations = Vec::new();
             'dirt_loop: for (dirt_location, _) in (&location_data, &dirt_data).join() {
                 // Randomness skip
-                if rand::random() {
+                if self.rng.gen::<bool>() {
                     continue 'dirt_loop;
                 }
 
