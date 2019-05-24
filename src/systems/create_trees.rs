@@ -47,7 +47,7 @@ impl<'a> System<'a> for CreateTreesSystem {
                 if (&location_data).join().any(|entity_location| {
                     entity_location.location.x == dirt_location.location.x
                         && entity_location.location.y == dirt_location.location.y
-                        && entity_location.location.z == dirt_location.location.z + 1
+                        && entity_location.location.z > dirt_location.location.z
                 }) {
                     continue 'dirt_loop;
                 }
