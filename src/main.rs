@@ -33,25 +33,39 @@ fn main() {
     // Components //
     world.register::<LocationInfo>();
     world.register::<MovementInfo>();
+    world.register::<Inventory>();
+    world.register::<Storable>();
     // Entities //
     world.register::<Elf>();
     world.register::<Tree>();
     world.register::<Dirt>();
     // Actions //
     world.register::<ActionMove>();
+    world.register::<ActionStore>();
 
     let mut elf_system = ElfSystem;
     let mut tree_growth_system = TreeGrowthSystem;
     let mut create_trees_system = CreateTreesSystem::new();
+    let mut store_system = StoreSystem;
     let mut pathfind_system = PathfindSystem;
     let mut movement_system = MovementSystem;
     let mut render_system = RenderSystem::new(display);
 
     // Test world
+    let log_entity = world
+        .create_entity()
+        .with(LocationInfo {
+            location: Location::new(2, 2, 1),
+            is_walkable: false,
+            texture_atlas_index: 7,
+        })
+        .with(Storable::new(10, 25))
+        .build();
     let mut elf = Elf::new();
     elf.queue_action(ActionMove::new(Location::new(-8, 10, 1)));
-    elf.queue_action(ActionMove::new(Location::new(7, -3, 1)));
-    world
+    elf.queue_action(ActionMove::new(Location::new(2, 1, 1)));
+    elf.queue_action(ActionStore::new(log_entity, elf_entity, Duration::from_secs(2)));
+    let elf_entity = world
         .create_entity()
         .with(elf)
         .with(MovementInfo::new(Duration::from_millis(333)))
@@ -60,6 +74,7 @@ fn main() {
             is_walkable: false,
             texture_atlas_index: 1,
         })
+        .with(Inventory::new(100, 40))
         .build();
     for x in -10..=10 {
         for y in -10..=10 {
@@ -96,6 +111,7 @@ fn main() {
             tree_growth_system.run_now(&world.res);
             create_trees_system.run_now(&world.res);
             world.maintain();
+            store_system.run_now(&world.res);
             pathfind_system.run_now(&world.res);
             movement_system.run_now(&world.res);
             world.maintain();

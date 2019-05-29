@@ -1,5 +1,5 @@
 use specs::storage::{BTreeStorage, NullStorage};
-use specs::Component;
+use specs::{Component, Entity};
 use specs_derive::Component;
 use std::time::Duration;
 
@@ -42,6 +42,41 @@ impl MovementInfo {
     }
 }
 
+#[derive(Component)]
+#[storage(BTreeStorage)]
+pub struct Inventory {
+    pub stored_entities: Vec<Entity>,
+    pub free_volume_left: u32,
+    pub free_weight_left: u32,
+    pub max_volume_stored: u32,
+    pub max_weight_stored: u32,
+}
+
+impl Inventory {
+    pub fn new(max_volume_stored: u32, max_weight_stored: u32) -> Self {
+        Self {
+            stored_entities: Vec::new(),
+            free_volume_left: max_volume_stored,
+            free_weight_left: max_weight_stored,
+            max_volume_stored,
+            max_weight_stored,
+        }
+    }
+}
+
+#[derive(Component)]
+#[storage(BTreeStorage)]
+pub struct Storable {
+    pub volume: u32,
+    pub weight: u32,
+}
+
+impl Storable {
+    pub fn new(volume: u32, weight: u32) -> Self {
+        Self { volume, weight }
+    }
+}
+
 // Entities //
 
 #[derive(Component)]
@@ -57,8 +92,8 @@ impl Elf {
         }
     }
 
-    pub fn queue_action(&mut self, action: ActionMove) {
-        self.action_queue.push(Action::Move(action));
+    pub fn queue_action<T: Into<Action>>(&mut self, action: T) {
+        self.action_queue.push(action.into());
     }
 }
 
@@ -94,6 +129,7 @@ pub struct Dirt;
 
 pub enum Action {
     Move(ActionMove),
+    Store(ActionStore),
 }
 
 #[derive(Component)]
@@ -111,5 +147,37 @@ impl ActionMove {
             should_pathfind: true,
             path: Vec::new(),
         }
+    }
+}
+
+impl Into<Action> for ActionMove {
+    fn into(self) -> Action {
+        Action::Move(self)
+    }
+}
+
+#[derive(Component)]
+#[storage(BTreeStorage)]
+pub struct ActionStore {
+    pub entity: Entity,
+    pub destination: Entity,
+    pub time_to_complete: Duration,
+    pub time_passed_so_far: Duration,
+}
+
+impl ActionStore {
+    pub fn new(entity: Entity, destination: Entity, time_to_complete: Duration) -> Self {
+        Self {
+            entity,
+            destination,
+            time_to_complete,
+            time_passed_so_far: Duration::from_secs(0),
+        }
+    }
+}
+
+impl Into<Action> for ActionStore {
+    fn into(self) -> Action {
+        Action::Store(self)
     }
 }
