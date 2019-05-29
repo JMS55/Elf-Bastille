@@ -46,20 +46,20 @@ impl MovementInfo {
 #[storage(BTreeStorage)]
 pub struct Inventory {
     pub stored_entities: Vec<Entity>,
-    pub free_volume_left: u32,
-    pub free_weight_left: u32,
-    pub max_volume_stored: u32,
-    pub max_weight_stored: u32,
+    pub volume_free: u32,
+    pub weight_free: u32,
+    pub max_volume: u32,
+    pub max_weight: u32,
 }
 
 impl Inventory {
-    pub fn new(max_volume_stored: u32, max_weight_stored: u32) -> Self {
+    pub fn new(max_volume: u32, max_weight: u32) -> Self {
         Self {
             stored_entities: Vec::new(),
-            free_volume_left: max_volume_stored,
-            free_weight_left: max_weight_stored,
-            max_volume_stored,
-            max_weight_stored,
+            volume_free: max_volume,
+            weight_free: max_weight,
+            max_volume,
+            max_weight,
         }
     }
 }

@@ -61,12 +61,16 @@ fn main() {
         })
         .with(Storable::new(10, 25))
         .build();
+    let elf_builder = world.create_entity();
     let mut elf = Elf::new();
     elf.queue_action(ActionMove::new(Location::new(-8, 10, 1)));
     elf.queue_action(ActionMove::new(Location::new(2, 1, 1)));
-    elf.queue_action(ActionStore::new(log_entity, elf_entity, Duration::from_secs(2)));
-    let elf_entity = world
-        .create_entity()
+    elf.queue_action(ActionStore::new(
+        log_entity,
+        elf_builder.entity,
+        Duration::from_secs(2),
+    ));
+    elf_builder
         .with(elf)
         .with(MovementInfo::new(Duration::from_millis(333)))
         .with(LocationInfo {
