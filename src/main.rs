@@ -36,6 +36,7 @@ fn main() {
     world.register::<MovementInfo>();
     world.register::<Inventory>();
     world.register::<Storable>();
+    world.register::<IsStored>();
     // Entities //
     world.register::<Elf>();
     world.register::<Tree>();
@@ -108,6 +109,7 @@ fn main() {
             create_trees_system.run_now(&world.res);
             world.maintain();
             store_system.run_now(&world.res);
+            world.maintain();
             pathfind_system.run_now(&world.res);
             movement_system.run_now(&world.res);
             world.maintain();

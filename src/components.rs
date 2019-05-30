@@ -91,6 +91,18 @@ impl Storable {
     }
 }
 
+#[derive(Component)]
+#[storage(BTreeStorage)]
+pub struct IsStored {
+    pub inventory: Entity,
+}
+
+impl IsStored {
+    pub fn new(inventory: Entity) -> Self {
+        Self { inventory }
+    }
+}
+
 // Entities //
 
 #[derive(Component)]
@@ -177,6 +189,7 @@ pub struct ActionStore {
     pub destination: Entity,
     pub time_to_complete: Duration,
     pub time_passed_so_far: Duration,
+    pub space_reserved: Option<Storable>,
 }
 
 impl ActionStore {
@@ -186,6 +199,7 @@ impl ActionStore {
             destination,
             time_to_complete,
             time_passed_so_far: Duration::from_secs(0),
+            space_reserved: None,
         }
     }
 }
