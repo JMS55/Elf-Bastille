@@ -1,4 +1,4 @@
-use crate::components::{Dirt, Location, LocationInfo, Tree};
+use crate::components::{Dirt, Location, LocationInfo, Texture, Tree};
 use crate::DELTA_TIME;
 use rand::Rng;
 use rand_pcg::Mcg128Xsl64;
@@ -76,11 +76,8 @@ impl<'a> System<'a> for CreateTreesSystem {
                 lazy_update
                     .create_entity(&entities)
                     .with(Tree::new())
-                    .with(LocationInfo {
-                        location: tree_location,
-                        is_walkable: false,
-                        texture_atlas_index: 2,
-                    })
+                    .with(Texture { atlas_index: 2 })
+                    .with(LocationInfo::new(tree_location, false))
                     .build();
             }
         }

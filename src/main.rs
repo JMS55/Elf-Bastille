@@ -54,11 +54,8 @@ fn main() {
     // Test world
     let log_entity = world
         .create_entity()
-        .with(LocationInfo {
-            location: Location::new(2, 2, 1),
-            is_walkable: false,
-            texture_atlas_index: 7,
-        })
+        .with(Texture { atlas_index: 7 })
+        .with(LocationInfo::new(Location::new(2, 2, 1), false))
         .with(Storable::new(10, 25))
         .build();
     let elf_builder = world.create_entity();
@@ -72,12 +69,9 @@ fn main() {
     ));
     elf_builder
         .with(elf)
+        .with(Texture { atlas_index: 1 })
         .with(MovementInfo::new(Duration::from_millis(333)))
-        .with(LocationInfo {
-            location: Location::new(0, 0, 1),
-            is_walkable: false,
-            texture_atlas_index: 1,
-        })
+        .with(LocationInfo::new(Location::new(0, 0, 1), false))
         .with(Inventory::new(100, 40))
         .build();
     for x in -10..=10 {
@@ -85,11 +79,8 @@ fn main() {
             world
                 .create_entity()
                 .with(Dirt)
-                .with(LocationInfo {
-                    location: Location::new(x, y, 0),
-                    is_walkable: true,
-                    texture_atlas_index: 9,
-                })
+                .with(Texture { atlas_index: 9 })
+                .with(LocationInfo::new(Location::new(x, y, 0), true))
                 .build();
         }
     }

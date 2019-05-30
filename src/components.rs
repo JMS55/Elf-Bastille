@@ -5,12 +5,26 @@ use std::time::Duration;
 
 // Components //
 
+#[derive(Component)]
+#[storage(BTreeStorage)]
+pub struct Texture {
+    pub atlas_index: u32,
+}
+
 #[derive(Component, PartialEq, Eq, Hash)]
 #[storage(BTreeStorage)]
 pub struct LocationInfo {
     pub location: Location,
     pub is_walkable: bool,
-    pub texture_atlas_index: u32,
+}
+
+impl LocationInfo {
+    pub fn new(location: Location, is_walkable: bool) -> Self {
+        Self {
+            location,
+            is_walkable,
+        }
+    }
 }
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
