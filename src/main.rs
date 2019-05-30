@@ -31,6 +31,7 @@ fn main() {
 
     let mut world = World::new();
     // Components //
+    world.register::<Texture>();
     world.register::<LocationInfo>();
     world.register::<MovementInfo>();
     world.register::<Inventory>();
