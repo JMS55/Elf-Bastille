@@ -35,7 +35,7 @@ fn main() {
     world.register::<LocationInfo>();
     world.register::<MovementInfo>();
     world.register::<Inventory>();
-    world.register::<Storable>();
+    world.register::<StorageInfo>();
     world.register::<IsStored>();
     // Entities //
     world.register::<Elf>();
@@ -58,7 +58,7 @@ fn main() {
         .create_entity()
         .with(Texture { atlas_index: 7 })
         .with(LocationInfo::new(Location::new(2, 2, 1), false))
-        .with(Storable::new(10, 25))
+        .with(StorageInfo::new(10, 25))
         .build();
     let elf_builder = world.create_entity();
     let mut elf = Elf::new();
@@ -69,6 +69,7 @@ fn main() {
         elf_builder.entity,
         Duration::from_secs(2),
     ));
+    elf.queue_action(ActionMove::new(Location::new(4, 7, 1)));
     elf_builder
         .with(elf)
         .with(Texture { atlas_index: 1 })

@@ -1,8 +1,9 @@
 use specs::storage::{BTreeStorage, NullStorage};
 use specs::{Component, Entity};
 use specs_derive::Component;
-use std::time::Duration;
 
+use std::collections::HashSet;
+use std::time::Duration;
 // Components //
 
 #[derive(Component)]
@@ -59,7 +60,7 @@ impl MovementInfo {
 #[derive(Component)]
 #[storage(BTreeStorage)]
 pub struct Inventory {
-    pub stored_entities: Vec<Entity>,
+    pub stored_entities: HashSet<Entity>,
     pub volume_free: u32,
     pub weight_free: u32,
     pub max_volume: u32,
@@ -69,7 +70,7 @@ pub struct Inventory {
 impl Inventory {
     pub fn new(max_volume: u32, max_weight: u32) -> Self {
         Self {
-            stored_entities: Vec::new(),
+            stored_entities: HashSet::new(),
             volume_free: max_volume,
             weight_free: max_weight,
             max_volume,
@@ -78,14 +79,14 @@ impl Inventory {
     }
 }
 
-#[derive(Component)]
+#[derive(Component, Copy, Clone)]
 #[storage(BTreeStorage)]
-pub struct Storable {
+pub struct StorageInfo {
     pub volume: u32,
     pub weight: u32,
 }
 
-impl Storable {
+impl StorageInfo {
     pub fn new(volume: u32, weight: u32) -> Self {
         Self { volume, weight }
     }
@@ -189,7 +190,7 @@ pub struct ActionStore {
     pub destination: Entity,
     pub time_to_complete: Duration,
     pub time_passed_so_far: Duration,
-    pub space_reserved: Option<Storable>,
+    pub reserved: Option<StorageInfo>,
 }
 
 impl ActionStore {
@@ -199,7 +200,7 @@ impl ActionStore {
             destination,
             time_to_complete,
             time_passed_so_far: Duration::from_secs(0),
-            space_reserved: None,
+            reserved: None,
         }
     }
 }
