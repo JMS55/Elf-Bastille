@@ -29,27 +29,34 @@ impl<'a> System<'a> for StoreSystem {
         for (action_store, action_entity) in (&mut action_store_data, &entities).join() {
             // Runs once at the start //
             if action_store.reserved.is_none() {
-                // Reserve volume and weight in destination
                 let entity_storage_info = storage_info_data
                     .get(action_store.entity)
                     .expect("Entity of ActionStore had no StorageInfo component");
                 let destination_inventory = inventory_data
                     .get_mut(action_store.destination)
                     .expect("Destination entity of ActionMove had no Inventory component");
-                destination_inventory.volume_free -= entity_storage_info.volume;
-                destination_inventory.weight_free -= entity_storage_info.weight;
-                action_store.reserved = Some(entity_storage_info.clone());
 
-                // Remove old components
-                location_info_data.remove(action_store.entity);
-                if let Some(is_stored) = is_stored_data.get(action_store.entity) {
-                    let previous_inventory = inventory_data.get_mut(is_stored.inventory).expect("Inventory entity of IsStored component did not have an Inventory component during ActionStore");
-                    previous_inventory
-                        .stored_entities
-                        .remove(&action_store.entity);
-                    previous_inventory.volume_free += entity_storage_info.volume;
-                    previous_inventory.weight_free += entity_storage_info.weight;
-                    is_stored_data.remove(action_store.entity);
+                // Reserve volume and weight in destination if there's room
+                if destination_inventory.volume_free >= entity_storage_info.volume
+                    && destination_inventory.weight_free >= entity_storage_info.weight
+                {
+                    destination_inventory.volume_free -= entity_storage_info.volume;
+                    destination_inventory.weight_free -= entity_storage_info.weight;
+                    action_store.reserved = Some(entity_storage_info.clone());
+
+                    // Remove old components
+                    location_info_data.remove(action_store.entity);
+                    if let Some(is_stored) = is_stored_data.get(action_store.entity) {
+                        let previous_inventory = inventory_data.get_mut(is_stored.inventory).expect("Inventory entity of IsStored component did not have an Inventory component during ActionStore");
+                        previous_inventory
+                            .stored_entities
+                            .remove(&action_store.entity);
+                        previous_inventory.volume_free += entity_storage_info.volume;
+                        previous_inventory.weight_free += entity_storage_info.weight;
+                        is_stored_data.remove(action_store.entity);
+                    }
+                } else {
+                    lazy_update.remove::<ActionStore>(action_entity);
                 }
             }
 
