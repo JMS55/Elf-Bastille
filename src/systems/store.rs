@@ -1,6 +1,7 @@
 use crate::components::{ActionStore, Inventory, IsStored, LocationInfo, StorageInfo};
 use crate::DELTA_TIME;
 use specs::{Entities, Join, LazyUpdate, Read, ReadStorage, System, WriteStorage};
+
 pub struct StoreSystem;
 
 impl<'a> System<'a> for StoreSystem {

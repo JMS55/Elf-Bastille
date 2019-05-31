@@ -104,6 +104,26 @@ impl IsStored {
     }
 }
 
+#[derive(Component)]
+#[storage(BTreeStorage)]
+pub struct Durabillity {
+    pub durabillity_left: u32,
+    pub max_durabillity: u32,
+    pub vulnerable_to: WeaponType,
+}
+
+#[derive(Component)]
+#[storage(BTreeStorage)]
+pub struct Weapon {
+    pub damage_per_use: u32,
+    pub time_per_use: u32,
+    pub uses_left: u32,
+    pub max_uses: u32,
+    pub weapon_type: WeaponType,
+}
+
+pub enum WeaponType {}
+
 // Entities //
 
 #[derive(Component)]
@@ -157,6 +177,7 @@ pub struct Dirt;
 pub enum Action {
     Move(ActionMove),
     Store(ActionStore),
+    Attack(ActionAttack),
 }
 
 #[derive(Component)]
@@ -208,5 +229,23 @@ impl ActionStore {
 impl Into<Action> for ActionStore {
     fn into(self) -> Action {
         Action::Store(self)
+    }
+}
+
+#[derive(Component)]
+#[storage(BTreeStorage)]
+pub struct ActionAttack {
+    target: Entity,
+}
+
+impl ActionAttack {
+    pub fn new(target: Entity) -> Self {
+        Self { target }
+    }
+}
+
+impl Into<Action> for ActionAttack {
+    fn into(self) -> Action {
+        Action::Attack(self)
     }
 }

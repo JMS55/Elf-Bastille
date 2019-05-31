@@ -37,6 +37,8 @@ fn main() {
     world.register::<Inventory>();
     world.register::<StorageInfo>();
     world.register::<IsStored>();
+    world.register::<Durabillity>();
+    world.register::<Weapon>();
     // Entities //
     world.register::<Elf>();
     world.register::<Tree>();
@@ -44,11 +46,13 @@ fn main() {
     // Actions //
     world.register::<ActionMove>();
     world.register::<ActionStore>();
+    world.register::<ActionAttack>();
 
     let mut elf_system = ElfSystem;
     let mut tree_growth_system = TreeGrowthSystem;
     let mut create_trees_system = CreateTreesSystem::new();
     let mut store_system = StoreSystem;
+    let mut attack_system = AttackSystem;
     let mut pathfind_system = PathfindSystem;
     let mut movement_system = MovementSystem;
     let mut render_system = RenderSystem::new(display);
@@ -111,6 +115,8 @@ fn main() {
             create_trees_system.run_now(&world.res);
             world.maintain();
             store_system.run_now(&world.res);
+            world.maintain();
+            attack_system.run_now(&world.res);
             world.maintain();
             pathfind_system.run_now(&world.res);
             movement_system.run_now(&world.res);
