@@ -1,9 +1,9 @@
 use specs::storage::{BTreeStorage, NullStorage};
 use specs::{Component, Entity};
 use specs_derive::Component;
-
 use std::collections::HashSet;
 use std::time::Duration;
+
 // Components //
 
 #[derive(Component)]

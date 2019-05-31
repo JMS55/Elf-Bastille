@@ -69,6 +69,7 @@ fn main() {
         elf_builder.entity,
         Duration::from_secs(2),
     ));
+    elf.queue_action(ActionMove::new(Location::new(10, 10, 1))); // Should be skipped over
     elf.queue_action(ActionMove::new(Location::new(4, 7, 1)));
     elf_builder
         .with(elf)

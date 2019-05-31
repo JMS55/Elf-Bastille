@@ -48,9 +48,6 @@ impl<'a> System<'a> for MovementSystem {
                             obstacles.insert(location.location, true);
                             action_move.path.remove(0);
                             movement_info.time_since_last_move = Duration::from_secs(0);
-                            if location.location == action_move.goal {
-                                lazy_update.remove::<ActionMove>(entity);
-                            }
                         } else {
                             if !obstacles[path_node] {
                                 action_move.should_pathfind = true;
@@ -58,6 +55,8 @@ impl<'a> System<'a> for MovementSystem {
                             continue;
                         }
                     }
+                } else {
+                    lazy_update.remove::<ActionMove>(entity);
                 }
             }
         }

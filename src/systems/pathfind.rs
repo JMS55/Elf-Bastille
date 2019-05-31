@@ -49,8 +49,8 @@ impl<'a> System<'a> for PathfindSystem {
 
             let mut current = action_move.goal;
             while current != location.location {
-                action_move.path.push(current);
                 if let Some(new_current) = came_from.remove(&current) {
+                    action_move.path.push(current);
                     current = new_current.unwrap();
                 } else {
                     break;
