@@ -37,7 +37,7 @@ fn main() {
     world.register::<Inventory>();
     world.register::<StorageInfo>();
     world.register::<IsStored>();
-    world.register::<Durabillity>();
+    world.register::<Attackable>();
     world.register::<Weapon>();
     // Entities //
     world.register::<Elf>();

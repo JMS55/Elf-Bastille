@@ -106,7 +106,7 @@ impl IsStored {
 
 #[derive(Component)]
 #[storage(BTreeStorage)]
-pub struct Durabillity {
+pub struct Attackable {
     pub durabillity_left: u32,
     pub max_durabillity: u32,
     pub vulnerable_to: WeaponType,
@@ -116,12 +116,12 @@ pub struct Durabillity {
 #[storage(BTreeStorage)]
 pub struct Weapon {
     pub damage_per_use: u32,
-    pub time_per_use: u32,
     pub uses_left: u32,
     pub max_uses: u32,
     pub weapon_type: WeaponType,
 }
 
+#[derive(PartialEq, Eq)]
 pub enum WeaponType {}
 
 // Entities //
@@ -235,7 +235,7 @@ impl Into<Action> for ActionStore {
 #[derive(Component)]
 #[storage(BTreeStorage)]
 pub struct ActionAttack {
-    target: Entity,
+    pub target: Entity,
 }
 
 impl ActionAttack {
