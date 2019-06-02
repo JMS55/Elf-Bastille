@@ -112,6 +112,16 @@ pub struct Attackable {
     pub vulnerable_to: WeaponType,
 }
 
+impl Attackable {
+    pub fn new(max_durabillity: u32, vulnerable_to: WeaponType) -> Self {
+        Self {
+            durabillity_left: max_durabillity,
+            max_durabillity,
+            vulnerable_to,
+        }
+    }
+}
+
 #[derive(Component)]
 #[storage(BTreeStorage)]
 pub struct Weapon {
@@ -121,8 +131,21 @@ pub struct Weapon {
     pub weapon_type: WeaponType,
 }
 
+impl Weapon {
+    pub fn new(damage_per_use: u32, max_uses: u32, weapon_type: WeaponType) -> Self {
+        Self {
+            damage_per_use,
+            uses_left: max_uses,
+            max_uses,
+            weapon_type,
+        }
+    }
+}
+
 #[derive(PartialEq, Eq)]
-pub enum WeaponType {}
+pub enum WeaponType {
+    Sword,
+}
 
 // Entities //
 

@@ -64,6 +64,18 @@ fn main() {
         .with(LocationInfo::new(Location::new(2, 2, 1), false))
         .with(StorageInfo::new(10, 25))
         .build();
+    let attackable_entity = world
+        .create_entity()
+        .with(Texture { atlas_index: 8 })
+        .with(LocationInfo::new(Location::new(5, 7, 1), false))
+        .with(Attackable::new(15, WeaponType::Sword))
+        .build();
+    let sword_storage_info = StorageInfo::new(10, 6);
+    let sword_entity = world
+        .create_entity()
+        .with(Weapon::new(3, 20, WeaponType::Sword))
+        .with(sword_storage_info)
+        .build();
     let elf_builder = world.create_entity();
     let mut elf = Elf::new();
     elf.queue_action(ActionMove::new(Location::new(-8, 10, 1)));
@@ -75,12 +87,21 @@ fn main() {
     ));
     elf.queue_action(ActionMove::new(Location::new(10, 10, 1))); // Should be skipped over
     elf.queue_action(ActionMove::new(Location::new(4, 7, 1)));
+    elf.queue_action(ActionAttack::new(attackable_entity));
+    elf.queue_action(ActionAttack::new(attackable_entity));
+    elf.queue_action(ActionAttack::new(attackable_entity));
+    elf.queue_action(ActionAttack::new(attackable_entity));
+    elf.queue_action(ActionAttack::new(attackable_entity));
+    let mut elf_inventory = Inventory::new(100, 40);
+    elf_inventory.stored_entities.insert(sword_entity);
+    elf_inventory.volume_free -= sword_storage_info.volume;
+    elf_inventory.weight_free -= sword_storage_info.weight;
     elf_builder
         .with(elf)
         .with(Texture { atlas_index: 1 })
         .with(MovementInfo::new(Duration::from_millis(333)))
         .with(LocationInfo::new(Location::new(0, 0, 1), false))
-        .with(Inventory::new(100, 40))
+        .with(elf_inventory)
         .build();
     for x in -10..=10 {
         for y in -10..=10 {
