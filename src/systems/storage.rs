@@ -10,7 +10,7 @@ impl<'a> System<'a> for StorageSystem {
         WriteStorage<'a, Inventory>,
         ReadStorage<'a, StorageInfo>,
         WriteStorage<'a, IsStored>,
-        WriteStorage<'a, LocationInfo>,
+        ReadStorage<'a, LocationInfo>,
         Read<'a, LazyUpdate>,
         Entities<'a>,
     );
@@ -22,7 +22,7 @@ impl<'a> System<'a> for StorageSystem {
             mut inventory_data,
             storage_info_data,
             mut is_stored_data,
-            mut location_info_data,
+            location_info_data,
             lazy_update,
             entities,
         ): Self::SystemData,
@@ -36,17 +36,38 @@ impl<'a> System<'a> for StorageSystem {
                 let destination_inventory = inventory_data
                     .get_mut(action_store.destination)
                     .expect("Destination entity of ActionStore had no Inventory component");
+                let destination_location = location_info_data
+                    .get(action_store.destination)
+                    .expect("Destination entity of ActionStore had no LocationInfo component")
+                    .location;
 
-                // Reserve volume and weight in destination if there's room
+                // Assign entity location
+                if let Some(is_stored) = is_stored_data.get(action_store.entity) {
+                    action_store.entity_location = Some(location_info_data.get(is_stored.inventory).expect("Entity of ActionStore had previous IsStored component but the parent Inventory entity had no LocationInfo component").location.clone());
+                } else {
+                    action_store.entity_location = Some(
+                        location_info_data
+                            .get(action_store.entity)
+                            .expect("Entity of ActionStore had no IsStored component, but also had no LocationInfo component")
+                            .location
+                            .clone(),
+                    );
+                }
+
+                // Reserve volume and weight in destination if there's room and locations are correct
                 if destination_inventory.volume_free >= entity_storage_info.volume
                     && destination_inventory.weight_free >= entity_storage_info.weight
+                    && action_store
+                        .entity_location
+                        .unwrap()
+                        .is_adjacent_to(&destination_location)
                 {
                     destination_inventory.volume_free -= entity_storage_info.volume;
                     destination_inventory.weight_free -= entity_storage_info.weight;
                     action_store.reserved = Some(entity_storage_info.clone());
 
                     // Remove old components
-                    location_info_data.remove(action_store.entity);
+                    lazy_update.remove::<LocationInfo>(action_store.entity);
                     if let Some(is_stored) = is_stored_data.get(action_store.entity) {
                         let previous_inventory = inventory_data.get_mut(is_stored.inventory).expect("Inventory entity of IsStored component did not have an Inventory component during ActionStore");
                         previous_inventory
@@ -58,17 +79,28 @@ impl<'a> System<'a> for StorageSystem {
                     }
                 } else {
                     lazy_update.remove::<ActionStore>(action_entity);
+                    continue;
                 }
             }
 
             // Runs until action completes //
             action_store.time_passed_so_far += DELTA_TIME;
 
+            // Checks
             if !entities.is_alive(action_store.destination) {
                 lazy_update.remove::<ActionStore>(action_entity);
+                continue;
             }
-
-            if !entities.is_alive(action_store.entity) {
+            let destination_location = location_info_data
+                .get(action_store.destination)
+                .expect("Destination entity of ActionStore had no LocationInfo component")
+                .location;
+            if !entities.is_alive(action_store.entity)
+                || !action_store
+                    .entity_location
+                    .unwrap()
+                    .is_adjacent_to(&destination_location)
+            {
                 let reserved = action_store.reserved.unwrap();
                 let destination_inventory = inventory_data
                     .get_mut(action_store.destination)
@@ -76,6 +108,7 @@ impl<'a> System<'a> for StorageSystem {
                 destination_inventory.volume_free += reserved.volume;
                 destination_inventory.weight_free += reserved.weight;
                 lazy_update.remove::<ActionStore>(action_entity);
+                continue;
             }
 
             if action_store.time_passed_so_far >= action_store.time_to_complete {

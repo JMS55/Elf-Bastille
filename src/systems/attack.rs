@@ -1,6 +1,4 @@
-use crate::components::{
-    ActionAttack, Attackable, Inventory, Location, LocationInfo, StorageInfo, Weapon,
-};
+use crate::components::{ActionAttack, Attackable, Inventory, LocationInfo, StorageInfo, Weapon};
 use specs::{Entities, Join, LazyUpdate, Read, ReadStorage, System, WriteStorage};
 
 pub struct AttackSystem;
@@ -55,9 +53,10 @@ impl<'a> System<'a> for AttackSystem {
 
             let target_location = location_data
                 .get(action_attack.target)
-                .expect("Target of ActionAttack had no LocationInfo component");
+                .expect("Target of ActionAttack had no LocationInfo component")
+                .location;
             // Check if adjacent to target
-            if elf_location.is_adjacent_to(target_location) {
+            if elf_location.location.is_adjacent_to(&target_location) {
                 // Check for a weapon that matches with target
                 let mut found_weapon = false;
                 for entity in &elf_inventory.stored_entities.clone() {
@@ -95,21 +94,5 @@ impl<'a> System<'a> for AttackSystem {
                 lazy_update.remove::<ActionAttack>(action_entity);
             }
         }
-    }
-}
-
-impl LocationInfo {
-    fn is_adjacent_to(&self, other: &Self) -> bool {
-        for offset in &[(1, 0), (-1, 0), (0, 1), (0, -1)] {
-            let offsetted = Location::new(
-                self.location.x + offset.0,
-                self.location.y + offset.1,
-                self.location.z,
-            );
-            if offsetted == other.location {
-                return true;
-            }
-        }
-        false
     }
 }

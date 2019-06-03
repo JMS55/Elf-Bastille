@@ -39,6 +39,16 @@ impl Location {
     pub fn new(x: i32, y: i32, z: i32) -> Self {
         Self { x, y, z }
     }
+
+    pub fn is_adjacent_to(&self, other: &Self) -> bool {
+        for offset in &[(1, 0), (-1, 0), (0, 1), (0, -1)] {
+            let offsetted = Location::new(self.x + offset.0, self.y + offset.1, self.z);
+            if &offsetted == other {
+                return true;
+            }
+        }
+        false
+    }
 }
 
 #[derive(Component)]
@@ -235,6 +245,7 @@ pub struct ActionStore {
     pub time_to_complete: Duration,
     pub time_passed_so_far: Duration,
     pub reserved: Option<StorageInfo>,
+    pub entity_location: Option<Location>,
 }
 
 impl ActionStore {
@@ -245,6 +256,7 @@ impl ActionStore {
             time_to_complete,
             time_passed_so_far: Duration::from_secs(0),
             reserved: None,
+            entity_location: None,
         }
     }
 }

@@ -79,13 +79,20 @@ fn main() {
     let elf_builder = world.create_entity();
     let mut elf = Elf::new();
     elf.queue_action(ActionMove::new(Location::new(-8, 10, 1)));
+    // Should be skipped over
+    elf.queue_action(ActionStore::new(
+        log_entity,
+        elf_builder.entity,
+        Duration::from_secs(2),
+    ));
     elf.queue_action(ActionMove::new(Location::new(2, 1, 1)));
     elf.queue_action(ActionStore::new(
         log_entity,
         elf_builder.entity,
         Duration::from_secs(2),
     ));
-    elf.queue_action(ActionMove::new(Location::new(10, 10, 1))); // Should be skipped over
+    // Should be skipped over
+    elf.queue_action(ActionMove::new(Location::new(10, 10, 1)));
     elf.queue_action(ActionMove::new(Location::new(4, 7, 1)));
     elf.queue_action(ActionAttack::new(attackable_entity));
     elf.queue_action(ActionAttack::new(attackable_entity));
