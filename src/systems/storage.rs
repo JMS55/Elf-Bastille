@@ -2,9 +2,9 @@ use crate::components::{ActionStore, Inventory, IsStored, LocationInfo, StorageI
 use crate::DELTA_TIME;
 use specs::{Entities, Join, LazyUpdate, Read, ReadStorage, System, WriteStorage};
 
-pub struct StoreSystem;
+pub struct StorageSystem;
 
-impl<'a> System<'a> for StoreSystem {
+impl<'a> System<'a> for StorageSystem {
     type SystemData = (
         WriteStorage<'a, ActionStore>,
         WriteStorage<'a, Inventory>,
@@ -35,7 +35,7 @@ impl<'a> System<'a> for StoreSystem {
                     .expect("Entity of ActionStore had no StorageInfo component");
                 let destination_inventory = inventory_data
                     .get_mut(action_store.destination)
-                    .expect("Destination entity of ActionMove had no Inventory component");
+                    .expect("Destination entity of ActionStore had no Inventory component");
 
                 // Reserve volume and weight in destination if there's room
                 if destination_inventory.volume_free >= entity_storage_info.volume
@@ -72,7 +72,7 @@ impl<'a> System<'a> for StoreSystem {
                 let reserved = action_store.reserved.unwrap();
                 let destination_inventory = inventory_data
                     .get_mut(action_store.destination)
-                    .expect("Destination entity of ActionMove had no Inventory component");
+                    .expect("Destination entity of ActionStore had no Inventory component");
                 destination_inventory.volume_free += reserved.volume;
                 destination_inventory.weight_free += reserved.weight;
                 lazy_update.remove::<ActionStore>(action_entity);
@@ -84,7 +84,7 @@ impl<'a> System<'a> for StoreSystem {
                     .unwrap();
                 let destination_inventory = inventory_data
                     .get_mut(action_store.destination)
-                    .expect("Destination entity of ActionMove had no Inventory component");
+                    .expect("Destination entity of ActionStore had no Inventory component");
                 destination_inventory
                     .stored_entities
                     .insert(action_store.entity);

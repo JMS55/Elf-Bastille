@@ -51,7 +51,7 @@ fn main() {
     let mut elf_system = ElfSystem;
     let mut tree_growth_system = TreeGrowthSystem;
     let mut create_trees_system = CreateTreesSystem::new();
-    let mut store_system = StoreSystem;
+    let mut storage_system = StorageSystem;
     let mut attack_system = AttackSystem;
     let mut pathfind_system = PathfindSystem;
     let mut movement_system = MovementSystem;
@@ -135,7 +135,7 @@ fn main() {
             tree_growth_system.run_now(&world.res);
             create_trees_system.run_now(&world.res);
             world.maintain();
-            store_system.run_now(&world.res);
+            storage_system.run_now(&world.res);
             world.maintain();
             attack_system.run_now(&world.res);
             world.maintain();
