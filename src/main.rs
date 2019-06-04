@@ -12,7 +12,7 @@ mod systems;
 pub const DELTA_TIME: Duration = Duration::from_nanos(16700000);
 pub const WORLD_SIZE: f32 = 21.0;
 pub const TEXTURE_SIZE: f32 = 32.0;
-pub const NUMBER_OF_TEXTURES: f32 = 10.0;
+pub const NUMBER_OF_TEXTURES: f32 = 11.0;
 
 fn main() {
     let mut event_loop = EventsLoop::new();
@@ -64,9 +64,9 @@ fn main() {
         .with(LocationInfo::new(Location::new(2, 2, 1), false))
         .with(StorageInfo::new(10, 25))
         .build();
-    let attackable_entity = world
+    let lizardman_entity = world
         .create_entity()
-        .with(Texture { atlas_index: 8 })
+        .with(Texture { atlas_index: 10 })
         .with(LocationInfo::new(Location::new(5, 7, 1), false))
         .with(Attackable::new(15, WeaponType::Sword))
         .build();
@@ -99,7 +99,7 @@ fn main() {
     // Should be skipped over
     elf.queue_action(ActionMove::new(Location::new(10, 10, 1)));
     elf.queue_action(ActionMove::new(Location::new(4, 7, 1)));
-    elf.queue_action(ActionAttack::new(attackable_entity));
+    elf.queue_action(ActionAttack::new(lizardman_entity));
     let mut elf_inventory = Inventory::new(100, 40);
     elf_inventory.stored_entities.insert(sword_entity);
     elf_inventory.volume_free -= sword_storage_info.volume;
