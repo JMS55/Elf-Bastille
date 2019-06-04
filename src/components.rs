@@ -138,15 +138,22 @@ pub struct Weapon {
     pub damage_per_use: u32,
     pub uses_left: u32,
     pub max_uses: u32,
+    pub recovery_time: Duration,
     pub weapon_type: WeaponType,
 }
 
 impl Weapon {
-    pub fn new(damage_per_use: u32, max_uses: u32, weapon_type: WeaponType) -> Self {
+    pub fn new(
+        damage_per_use: u32,
+        max_uses: u32,
+        recovery_time: Duration,
+        weapon_type: WeaponType,
+    ) -> Self {
         Self {
             damage_per_use,
             uses_left: max_uses,
             max_uses,
+            recovery_time,
             weapon_type,
         }
     }
@@ -271,11 +278,15 @@ impl Into<Action> for ActionStore {
 #[storage(BTreeStorage)]
 pub struct ActionAttack {
     pub target: Entity,
+    pub recovery_time_left: Duration,
 }
 
 impl ActionAttack {
     pub fn new(target: Entity) -> Self {
-        Self { target }
+        Self {
+            target,
+            recovery_time_left: Duration::from_secs(0),
+        }
     }
 }
 

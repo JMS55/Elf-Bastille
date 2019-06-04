@@ -73,7 +73,12 @@ fn main() {
     let sword_storage_info = StorageInfo::new(10, 6);
     let sword_entity = world
         .create_entity()
-        .with(Weapon::new(3, 20, WeaponType::Sword))
+        .with(Weapon::new(
+            3,
+            20,
+            Duration::from_secs(1),
+            WeaponType::Sword,
+        ))
         .with(sword_storage_info)
         .build();
     let elf_builder = world.create_entity();
@@ -94,10 +99,6 @@ fn main() {
     // Should be skipped over
     elf.queue_action(ActionMove::new(Location::new(10, 10, 1)));
     elf.queue_action(ActionMove::new(Location::new(4, 7, 1)));
-    elf.queue_action(ActionAttack::new(attackable_entity));
-    elf.queue_action(ActionAttack::new(attackable_entity));
-    elf.queue_action(ActionAttack::new(attackable_entity));
-    elf.queue_action(ActionAttack::new(attackable_entity));
     elf.queue_action(ActionAttack::new(attackable_entity));
     let mut elf_inventory = Inventory::new(100, 40);
     elf_inventory.stored_entities.insert(sword_entity);
