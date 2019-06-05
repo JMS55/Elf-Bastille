@@ -72,7 +72,13 @@ impl<'a> System<'a> for AttackSystem {
                                     .checked_sub(weapon.damage_per_use)
                                     .unwrap_or(0);
                                 if target_attackable.durabillity_left == 0 {
-                                    entities.delete(action_attack.target).unwrap();
+                                    if let Some(target_on_destroy) = target_attackable.on_destroy {
+                                        target_on_destroy(action_attack.target, &lazy_update);
+                                    }
+                                    let target_entity = action_attack.target;
+                                    lazy_update.exec(move |world| {
+                                        world.entities().delete(target_entity).unwrap()
+                                    });
                                     lazy_update.remove::<ActionAttack>(action_entity);
                                 }
 

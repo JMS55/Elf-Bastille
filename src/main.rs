@@ -2,7 +2,7 @@ use components::*;
 use glium::glutin::dpi::LogicalSize;
 use glium::glutin::{ContextBuilder, Event, EventsLoop, WindowBuilder, WindowEvent};
 use glium::Display;
-use specs::{Builder, RunNow, World};
+use specs::{Builder, Join, RunNow, World};
 use std::time::{Duration, Instant};
 use systems::*;
 
@@ -57,7 +57,8 @@ fn main() {
     let mut movement_system = MovementSystem;
     let mut render_system = RenderSystem::new(display);
 
-    // Test world
+    // Test world - Entities don't have an IsStored component
+    let mut ran_once = false;
     let log_entity = world
         .create_entity()
         .with(Texture { atlas_index: 7 })
@@ -68,7 +69,7 @@ fn main() {
         .create_entity()
         .with(Texture { atlas_index: 10 })
         .with(LocationInfo::new(Location::new(5, 7, 1), false))
-        .with(Attackable::new(15, WeaponType::Sword))
+        .with(Attackable::new(15, WeaponType::Sword, None))
         .build();
     let sword_storage_info = StorageInfo::new(10, 6);
     let sword_entity = world
@@ -80,6 +81,12 @@ fn main() {
             WeaponType::Sword,
         ))
         .with(sword_storage_info)
+        .build();
+    let axe_storage_info = StorageInfo::new(7, 10);
+    let axe_entity = world
+        .create_entity()
+        .with(Weapon::new(7, 20, Duration::from_secs(2), WeaponType::Axe))
+        .with(axe_storage_info)
         .build();
     let elf_builder = world.create_entity();
     let mut elf = Elf::new();
@@ -102,8 +109,11 @@ fn main() {
     elf.queue_action(ActionAttack::new(lizardman_entity));
     let mut elf_inventory = Inventory::new(100, 40);
     elf_inventory.stored_entities.insert(sword_entity);
+    elf_inventory.stored_entities.insert(axe_entity);
     elf_inventory.volume_free -= sword_storage_info.volume;
     elf_inventory.weight_free -= sword_storage_info.weight;
+    elf_inventory.volume_free -= axe_storage_info.volume;
+    elf_inventory.weight_free -= axe_storage_info.weight;
     elf_builder
         .with(elf)
         .with(Texture { atlas_index: 1 })
@@ -150,6 +160,32 @@ fn main() {
             pathfind_system.run_now(&world.res);
             movement_system.run_now(&world.res);
             world.maintain();
+
+            // Test world
+            if !ran_once {
+                let tree_entity = {
+                    let mut tree_entity = None;
+                    for (_, entity, location) in (
+                        &world.read_storage::<Tree>(),
+                        &world.entities(),
+                        &world.read_storage::<LocationInfo>(),
+                    )
+                        .join()
+                    {
+                        if location.location == Location::new(-10, -7, 1) {
+                            tree_entity = Some(entity);
+                            break;
+                        }
+                    }
+                    tree_entity
+                };
+                for elf in (&mut world.write_storage::<Elf>()).join() {
+                    elf.queue_action(ActionMove::new(Location::new(-9, -7, 1)));
+                    elf.queue_action(ActionAttack::new(tree_entity.unwrap()));
+                }
+                ran_once = true;
+            }
+
             accumulator -= DELTA_TIME;
         }
 

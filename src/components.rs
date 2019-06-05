@@ -1,5 +1,5 @@
 use specs::storage::{BTreeStorage, NullStorage};
-use specs::{Component, Entity};
+use specs::{Component, Entity, LazyUpdate, Read};
 use specs_derive::Component;
 use std::collections::HashSet;
 use std::time::Duration;
@@ -120,14 +120,20 @@ pub struct Attackable {
     pub durabillity_left: u32,
     pub max_durabillity: u32,
     pub vulnerable_to: WeaponType,
+    pub on_destroy: Option<fn(Entity, &Read<LazyUpdate>)>, // Entity is the entity belonging to this component
 }
 
 impl Attackable {
-    pub fn new(max_durabillity: u32, vulnerable_to: WeaponType) -> Self {
+    pub fn new(
+        max_durabillity: u32,
+        vulnerable_to: WeaponType,
+        on_destroy: Option<fn(Entity, &Read<LazyUpdate>)>,
+    ) -> Self {
         Self {
             durabillity_left: max_durabillity,
             max_durabillity,
             vulnerable_to,
+            on_destroy,
         }
     }
 }
@@ -162,6 +168,7 @@ impl Weapon {
 #[derive(PartialEq, Eq)]
 pub enum WeaponType {
     Sword,
+    Axe,
 }
 
 // Entities //
@@ -189,13 +196,15 @@ impl Elf {
 pub struct Tree {
     pub growth_stage: TreeGrowthStage,
     pub growth_timer: Duration,
+    pub max_logs_dropped: u32, // Number of logs at the max growth stage, with each stage lower dropping 2 less, and the last dropping 0
 }
 
 impl Tree {
-    pub fn new() -> Self {
+    pub fn new(max_logs_dropped: u32) -> Self {
         Self {
             growth_stage: TreeGrowthStage::Stage1,
             growth_timer: Duration::from_secs(0),
+            max_logs_dropped,
         }
     }
 }

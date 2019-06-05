@@ -1,8 +1,11 @@
-use crate::components::{Dirt, Location, LocationInfo, Texture, Tree};
+use crate::components::{
+    Attackable, Dirt, Location, LocationInfo, StorageInfo, Texture, Tree, TreeGrowthStage,
+    WeaponType,
+};
 use crate::DELTA_TIME;
 use rand::Rng;
 use rand_pcg::Mcg128Xsl64;
-use specs::{Builder, Entities, Join, LazyUpdate, Read, ReadStorage, System};
+use specs::{Builder, Entities, Entity, Join, LazyUpdate, Read, ReadStorage, System};
 use std::time::Duration;
 
 pub struct CreateTreesSystem {
@@ -75,11 +78,49 @@ impl<'a> System<'a> for CreateTreesSystem {
                 new_tree_locations.push(tree_location);
                 lazy_update
                     .create_entity(&entities)
-                    .with(Tree::new())
+                    .with(Tree::new(self.rng.gen_range(7, 14)))
                     .with(Texture { atlas_index: 2 })
                     .with(LocationInfo::new(tree_location, false))
+                    .with(Attackable::new(
+                        30,
+                        WeaponType::Axe,
+                        Some(create_pile_of_logs),
+                    ))
                     .build();
             }
         }
     }
+}
+
+fn create_pile_of_logs(tree_entity: Entity, lazy_update: &Read<LazyUpdate>) {
+    lazy_update.exec_mut(move |world| {
+        let number_of_logs = {
+            let tree_data = world.read_storage::<Tree>();
+            let tree = tree_data
+                .get(tree_entity)
+                .expect("tree_entity did not have a Tree component in create_pile_of_logs()");
+            match tree.growth_stage {
+                TreeGrowthStage::Stage1 => 0,
+                TreeGrowthStage::Stage2 => tree.max_logs_dropped - 6,
+                TreeGrowthStage::Stage3 => tree.max_logs_dropped - 4,
+                TreeGrowthStage::Stage4 => tree.max_logs_dropped - 2,
+                TreeGrowthStage::Stage5 => tree.max_logs_dropped,
+            }
+        };
+
+        let tree_location = world
+            .read_storage::<LocationInfo>()
+            .get(tree_entity)
+            .expect("tree_entity did not have a LocationInfo component in create_pile_of_logs()")
+            .location;
+
+        for _ in 0..=number_of_logs {
+            world
+                .create_entity()
+                .with(Texture { atlas_index: 7 })
+                .with(LocationInfo::new(tree_location, false))
+                .with(StorageInfo::new(10, 25))
+                .build();
+        }
+    });
 }
