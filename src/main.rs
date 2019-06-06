@@ -97,7 +97,7 @@ fn main() {
         elf_builder.entity,
         Duration::from_secs(2),
     ));
-    elf.queue_action(ActionMove::new(Location::new(2, 1, 1)));
+    elf.queue_action(ActionMove::new(Location::new(1, 2, 1)));
     elf.queue_action(ActionStore::new(
         log_entity,
         elf_builder.entity,
@@ -107,7 +107,7 @@ fn main() {
     elf.queue_action(ActionMove::new(Location::new(10, 10, 1)));
     elf.queue_action(ActionMove::new(Location::new(4, 7, 1)));
     elf.queue_action(ActionAttack::new(lizardman_entity));
-    let mut elf_inventory = Inventory::new(100, 40);
+    let mut elf_inventory = Inventory::new(100, 100);
     elf_inventory.stored_entities.insert(sword_entity);
     elf_inventory.stored_entities.insert(axe_entity);
     elf_inventory.volume_free -= sword_storage_info.volume;
