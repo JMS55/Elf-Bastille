@@ -9,5 +9,5 @@ specs-derive = "0.4"
 rayon = "1.0"
 rand = "0.6"
 rand_pcg = "0.1"
-glium = "0.23"
+glium = { version = "0.23", features = ["icon_loading"] }
 image = "0.21"

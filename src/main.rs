@@ -1,6 +1,6 @@
 use components::*;
 use glium::glutin::dpi::LogicalSize;
-use glium::glutin::{ContextBuilder, Event, EventsLoop, WindowBuilder, WindowEvent};
+use glium::glutin::{ContextBuilder, Event, EventsLoop, Icon, WindowBuilder, WindowEvent};
 use glium::Display;
 use specs::{Builder, Join, RunNow, World};
 use std::time::{Duration, Instant};
@@ -22,7 +22,10 @@ fn main() {
             (WORLD_SIZE * TEXTURE_SIZE) as f64,
         ))
         .with_resizable(false)
-        .with_title("Elf Bastille");
+        .with_title("Elf Bastille")
+        .with_window_icon(Some(
+            Icon::from_bytes(include_bytes!("../icon.png")).expect("Failed to load icon"),
+        ));
     let context = ContextBuilder::new()
         .with_vsync(true)
         .with_srgb(true)
