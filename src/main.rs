@@ -10,7 +10,7 @@ mod components;
 mod systems;
 
 pub const DELTA_TIME: Duration = Duration::from_nanos(16700000);
-pub const WORLD_SIZE: f32 = 21.0;
+pub const VIEWPORT_SIZE: f32 = 21.0;
 pub const TEXTURE_SIZE: f32 = 32.0;
 pub const NUMBER_OF_TEXTURES: f32 = 11.0;
 
@@ -18,8 +18,8 @@ fn main() {
     let mut event_loop = EventsLoop::new();
     let window = WindowBuilder::new()
         .with_dimensions(LogicalSize::new(
-            (WORLD_SIZE * TEXTURE_SIZE) as f64,
-            (WORLD_SIZE * TEXTURE_SIZE) as f64,
+            (VIEWPORT_SIZE * TEXTURE_SIZE) as f64,
+            (VIEWPORT_SIZE * TEXTURE_SIZE) as f64,
         ))
         .with_resizable(false)
         .with_title("Elf Bastille")
@@ -146,6 +146,27 @@ fn main() {
         event_loop.poll_events(|event| match event {
             Event::WindowEvent { event, .. } => match event {
                 WindowEvent::CloseRequested => should_close = true,
+                WindowEvent::KeyboardInput { input, .. } => {
+                    match input.scancode {
+                        // W
+                        17 => {
+                            render_system.centered_location.y -= 1;
+                        }
+                        // A
+                        30 => {
+                            render_system.centered_location.x += 1;
+                        }
+                        // S
+                        31 => {
+                            render_system.centered_location.y += 1;
+                        }
+                        // D
+                        32 => {
+                            render_system.centered_location.x -= 1;
+                        }
+                        _ => {}
+                    }
+                }
                 _ => {}
             },
             _ => {}

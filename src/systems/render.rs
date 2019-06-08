@@ -1,5 +1,5 @@
-use crate::components::{LocationInfo, Texture};
-use crate::{NUMBER_OF_TEXTURES, WORLD_SIZE};
+use crate::components::{Location, LocationInfo, Texture};
+use crate::{NUMBER_OF_TEXTURES, VIEWPORT_SIZE};
 use glium::index::PrimitiveType;
 use glium::texture::{RawImage2d, SrgbTexture2d};
 use glium::uniforms::{MagnifySamplerFilter, Sampler};
@@ -12,6 +12,7 @@ use specs::{ParJoin, ReadStorage, System};
 use std::io::Cursor;
 
 pub struct RenderSystem {
+    pub centered_location: Location,
     pub display: Display,
     texture_atlas: SrgbTexture2d,
     program: Program,
@@ -72,19 +73,19 @@ impl RenderSystem {
             &display,
             &[
                 TemplateVertex {
-                    initial: [1.0 / WORLD_SIZE, 1.0 / WORLD_SIZE, 0.0],
+                    initial: [1.0 / VIEWPORT_SIZE, 1.0 / VIEWPORT_SIZE, 0.0],
                     texture: [0.0, 1.0],
                 },
                 TemplateVertex {
-                    initial: [-1.0 / WORLD_SIZE, 1.0 / WORLD_SIZE, 0.0],
+                    initial: [-1.0 / VIEWPORT_SIZE, 1.0 / VIEWPORT_SIZE, 0.0],
                     texture: [1.0 / NUMBER_OF_TEXTURES as f32, 1.0],
                 },
                 TemplateVertex {
-                    initial: [1.0 / WORLD_SIZE, -1.0 / WORLD_SIZE, 0.0],
+                    initial: [1.0 / VIEWPORT_SIZE, -1.0 / VIEWPORT_SIZE, 0.0],
                     texture: [0.0, 0.0],
                 },
                 TemplateVertex {
-                    initial: [-1.0 / WORLD_SIZE, -1.0 / WORLD_SIZE, 0.0],
+                    initial: [-1.0 / VIEWPORT_SIZE, -1.0 / VIEWPORT_SIZE, 0.0],
                     texture: [1.0 / NUMBER_OF_TEXTURES as f32, 0.0],
                 },
             ],
@@ -95,6 +96,7 @@ impl RenderSystem {
             .expect("Failed to create template index buffer");
 
         Self {
+            centered_location: Location::new(0, 0, 1),
             display,
             texture_atlas,
             program,
@@ -109,14 +111,19 @@ impl<'a> System<'a> for RenderSystem {
 
     fn run(&mut self, (location_data, texture_data): Self::SystemData) {
         let mut draw_target = self.display.draw();
-        draw_target.clear_color_srgb_and_depth((1.00, 0.40, 0.70, 1.00), 1.00);
+        draw_target.clear_color_srgb_and_depth((0.0, 0.0, 0.0, 1.0), 1.0);
+        let centered_location = self.centered_location;
         let instance_data = (&location_data, &texture_data)
             .par_join()
+            .filter(|(location_info, _)| {
+                (location_info.location.x - centered_location.x).abs() <= 10
+                    && (location_info.location.y - centered_location.y).abs() <= 10
+            })
             .map(|(location_info, texture)| InstanceData {
                 instance: [
-                    2.0 * (location_info.location.x as f32) / WORLD_SIZE,
-                    2.0 * (location_info.location.y as f32) / WORLD_SIZE,
-                    (-location_info.location.z as f32) / WORLD_SIZE,
+                    2.0 * (location_info.location.x as f32) / VIEWPORT_SIZE,
+                    2.0 * (location_info.location.y as f32) / VIEWPORT_SIZE,
+                    (-location_info.location.z as f32) / VIEWPORT_SIZE,
                 ],
                 texture_atlas_index: texture.atlas_index as f32,
             })
