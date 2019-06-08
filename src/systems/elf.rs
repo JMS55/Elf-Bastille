@@ -9,6 +9,7 @@ impl<'a> System<'a> for ElfSystem {
         ReadStorage<'a, ActionMove>,
         ReadStorage<'a, ActionStore>,
         ReadStorage<'a, ActionAttack>,
+        ReadStorage<'a, ActionCraft>,
         Read<'a, LazyUpdate>,
         Entities<'a>,
     );
@@ -20,16 +21,18 @@ impl<'a> System<'a> for ElfSystem {
             action_move_data,
             action_store_data,
             action_attack_data,
+            action_craft_data,
             lazy_update,
             entities,
         ): Self::SystemData,
     ) {
-        for (elf, elf_entity, _, _, _) in (
+        for (elf, elf_entity, _, _, _, _) in (
             &mut elf_data,
             &entities,
             !&action_move_data,
             !&action_store_data,
             !&action_attack_data,
+            !&action_craft_data,
         )
             .join()
         {
@@ -38,6 +41,7 @@ impl<'a> System<'a> for ElfSystem {
                     Action::Move(action) => lazy_update.insert(elf_entity, action),
                     Action::Store(action) => lazy_update.insert(elf_entity, action),
                     Action::Attack(action) => lazy_update.insert(elf_entity, action),
+                    Action::Craft(action) => lazy_update.insert(elf_entity, action),
                 }
             }
         }

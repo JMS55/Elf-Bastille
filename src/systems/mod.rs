@@ -1,4 +1,5 @@
 mod attack;
+mod craft;
 mod create_trees;
 mod elf;
 mod movement;
@@ -8,6 +9,7 @@ mod storage;
 mod tree_growth;
 
 pub use attack::AttackSystem;
+pub use craft::CraftSystem;
 pub use create_trees::CreateTreesSystem;
 pub use elf::ElfSystem;
 pub use movement::MovementSystem;

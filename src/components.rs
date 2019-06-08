@@ -171,6 +171,14 @@ pub enum WeaponType {
     Axe,
 }
 
+#[derive(Component, PartialEq, Eq)]
+#[storage(BTreeStorage)]
+pub enum CraftingMaterial {}
+
+#[derive(Component, PartialEq, Eq)]
+#[storage(BTreeStorage)]
+pub enum CraftingAid {}
+
 // Entities //
 
 #[derive(Component)]
@@ -227,6 +235,7 @@ pub enum Action {
     Move(ActionMove),
     Store(ActionStore),
     Attack(ActionAttack),
+    Craft(ActionCraft),
 }
 
 #[derive(Component)]
@@ -302,5 +311,43 @@ impl ActionAttack {
 impl Into<Action> for ActionAttack {
     fn into(self) -> Action {
         Action::Attack(self)
+    }
+}
+
+#[derive(Component)]
+#[storage(BTreeStorage)]
+pub struct ActionCraft {
+    pub materials: Vec<CraftingMaterial>,
+    pub aids: HashSet<CraftingAid>,
+    pub output_storage_info: StorageInfo,
+    pub create_output: fn(&Read<LazyUpdate>) -> Entity, // Returns the new entity created
+    pub time_to_complete: Duration,
+    pub time_passed_so_far: Duration,
+    pub did_reserve: bool,
+}
+
+impl ActionCraft {
+    pub fn new(
+        materials: Vec<CraftingMaterial>,
+        aids: HashSet<CraftingAid>,
+        output_storage_info: StorageInfo,
+        create_output: fn(&Read<LazyUpdate>) -> Entity,
+        time_to_complete: Duration,
+    ) -> Self {
+        Self {
+            materials,
+            aids,
+            output_storage_info,
+            create_output,
+            time_to_complete,
+            time_passed_so_far: Duration::from_secs(0),
+            did_reserve: false,
+        }
+    }
+}
+
+impl Into<Action> for ActionCraft {
+    fn into(self) -> Action {
+        Action::Craft(self)
     }
 }

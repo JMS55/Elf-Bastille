@@ -22,7 +22,7 @@ impl<'a> System<'a> for StorageSystem {
             mut inventory_data,
             storage_info_data,
             mut is_stored_data,
-            location_info_data,
+            location_data,
             lazy_update,
             entities,
         ): Self::SystemData,
@@ -36,17 +36,17 @@ impl<'a> System<'a> for StorageSystem {
                 let destination_inventory = inventory_data
                     .get_mut(action_store.destination)
                     .expect("Destination entity of ActionStore had no Inventory component");
-                let destination_location = location_info_data
+                let destination_location = location_data
                     .get(action_store.destination)
                     .expect("Destination entity of ActionStore had no LocationInfo component")
                     .location;
 
-                // Assign entity location
+                // Assign action_store.entity_location
                 if let Some(is_stored) = is_stored_data.get(action_store.entity) {
-                    action_store.entity_location = Some(location_info_data.get(is_stored.inventory).expect("Entity of ActionStore had previous IsStored component but the parent Inventory entity had no LocationInfo component").location.clone());
+                    action_store.entity_location = Some(location_data.get(is_stored.inventory).expect("Entity of ActionStore had previous IsStored component but the parent Inventory entity had no LocationInfo component").location.clone());
                 } else {
                     action_store.entity_location = Some(
-                        location_info_data
+                        location_data
                             .get(action_store.entity)
                             .expect("Entity of ActionStore had no IsStored component, but also had no LocationInfo component")
                             .location
@@ -91,7 +91,7 @@ impl<'a> System<'a> for StorageSystem {
                 lazy_update.remove::<ActionStore>(action_entity);
                 continue;
             }
-            let destination_location = location_info_data
+            let destination_location = location_data
                 .get(action_store.destination)
                 .expect("Destination entity of ActionStore had no LocationInfo component")
                 .location;
