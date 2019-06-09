@@ -1,6 +1,8 @@
 use components::*;
 use glium::glutin::dpi::LogicalSize;
-use glium::glutin::{ContextBuilder, Event, EventsLoop, Icon, WindowBuilder, WindowEvent};
+use glium::glutin::{
+    ContextBuilder, ElementState, Event, EventsLoop, Icon, WindowBuilder, WindowEvent,
+};
 use glium::Display;
 use specs::{Builder, Join, RunNow, World};
 use std::time::{Duration, Instant};
@@ -146,7 +148,9 @@ fn main() {
         event_loop.poll_events(|event| match event {
             Event::WindowEvent { event, .. } => match event {
                 WindowEvent::CloseRequested => should_close = true,
-                WindowEvent::KeyboardInput { input, .. } => {
+                WindowEvent::KeyboardInput { input, .. }
+                    if input.state == ElementState::Pressed =>
+                {
                     match input.scancode {
                         // W
                         17 => {
