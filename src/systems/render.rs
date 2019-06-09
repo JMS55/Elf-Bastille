@@ -12,7 +12,7 @@ use specs::{ParJoin, ReadStorage, System};
 use std::io::Cursor;
 
 pub struct RenderSystem {
-    pub centered_location: Location,
+    pub camera_center: Location,
     pub display: Display,
     texture_atlas: SrgbTexture2d,
     program: Program,
@@ -96,7 +96,7 @@ impl RenderSystem {
             .expect("Failed to create template index buffer");
 
         Self {
-            centered_location: Location::new(0, 0, 1),
+            camera_center: Location::new(0, 0, 0),
             display,
             texture_atlas,
             program,
@@ -112,17 +112,13 @@ impl<'a> System<'a> for RenderSystem {
     fn run(&mut self, (location_data, texture_data): Self::SystemData) {
         let mut draw_target = self.display.draw();
         draw_target.clear_color_srgb_and_depth((0.0, 0.0, 0.0, 1.0), 1.0);
-        let centered_location = self.centered_location;
+        let camera_center = self.camera_center;
         let instance_data = (&location_data, &texture_data)
             .par_join()
-            .filter(|(location_info, _)| {
-                (location_info.location.x - centered_location.x).abs() <= 10
-                    && (location_info.location.y - centered_location.y).abs() <= 10
-            })
             .map(|(location_info, texture)| InstanceData {
                 instance: [
-                    2.0 * (location_info.location.x as f32) / VIEWPORT_SIZE,
-                    2.0 * (location_info.location.y as f32) / VIEWPORT_SIZE,
+                    2.0 * ((location_info.location.x - camera_center.x) as f32) / VIEWPORT_SIZE,
+                    2.0 * ((location_info.location.y - camera_center.y) as f32) / VIEWPORT_SIZE,
                     (-location_info.location.z as f32) / VIEWPORT_SIZE,
                 ],
                 texture_atlas_index: texture.atlas_index as f32,

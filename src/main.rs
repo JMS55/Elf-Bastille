@@ -150,19 +150,19 @@ fn main() {
                     match input.scancode {
                         // W
                         17 => {
-                            render_system.centered_location.y -= 1;
+                            render_system.camera_center.y += 1;
                         }
                         // A
                         30 => {
-                            render_system.centered_location.x += 1;
+                            render_system.camera_center.x -= 1;
                         }
                         // S
                         31 => {
-                            render_system.centered_location.y += 1;
+                            render_system.camera_center.y -= 1;
                         }
                         // D
                         32 => {
-                            render_system.centered_location.x -= 1;
+                            render_system.camera_center.x += 1;
                         }
                         _ => {}
                     }
