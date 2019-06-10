@@ -302,6 +302,9 @@ version = "1.0.0"
 dependencies = [
  "glium 0.23.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "image 0.21.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "imgui 0.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
+ "imgui-glium-renderer 0.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
+ "imgui-winit-support 0.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand_pcg 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "rayon 1.0.3 (registry+https://github.com/rust-lang/crates.io-index)",
@@ -453,6 +456,44 @@ dependencies = [
  "png 0.14.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "scoped_threadpool 0.1.9 (registry+https://github.com/rust-lang/crates.io-index)",
  "tiff 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "imgui"
+version = "0.0.23"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "imgui-sys 0.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "imgui-glium-renderer"
+version = "0.0.23"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "glium 0.23.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "imgui 0.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
+ "imgui-sys 0.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "imgui-sys"
+version = "0.0.23"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "bitflags 1.0.4 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cc 1.0.37 (registry+https://github.com/rust-lang/crates.io-index)",
+ "glium 0.23.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "libc 0.2.55 (registry+https://github.com/rust-lang/crates.io-index)",
+]
+
+[[package]]
+name = "imgui-winit-support"
+version = "0.0.23"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "imgui 0.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
+ "winit 0.18.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -1258,6 +1299,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum hibitset 0.5.4 (registry+https://github.com/rust-lang/crates.io-index)" = "6527bc88f32e0d3926c7572874b2bf17a19b36978aacd0aacf75f7d27a5992d0"
 "checksum image 0.20.1 (registry+https://github.com/rust-lang/crates.io-index)" = "44665b4395d1844c96e7dc8ed5754782a1cdfd9ef458a80bbe45702681450504"
 "checksum image 0.21.1 (registry+https://github.com/rust-lang/crates.io-index)" = "293e54ce142a936a39da748ba8178ae6aa1914b82d846a4278f11590c89bf116"
+"checksum imgui 0.0.23 (registry+https://github.com/rust-lang/crates.io-index)" = "0cf1fcb9c1ffe0863030288d492c526e8d9fe65a2f253a10ba09baf35b086c1c"
+"checksum imgui-glium-renderer 0.0.23 (registry+https://github.com/rust-lang/crates.io-index)" = "4928ecc2ec5ebdca9b7d8ff66a6e7a5bc52a2917d651258b948bf1cbb4338186"
+"checksum imgui-sys 0.0.23 (registry+https://github.com/rust-lang/crates.io-index)" = "43dffca7910d6729da3cfb1aaf9022532316b66395fc495221d0d27003be8771"
+"checksum imgui-winit-support 0.0.23 (registry+https://github.com/rust-lang/crates.io-index)" = "12392d43d3eeea1eba6b627f6c1c74c108b55e9ed49719bd35c90c3ab20e8112"
 "checksum inflate 0.4.5 (registry+https://github.com/rust-lang/crates.io-index)" = "1cdb29978cc5797bd8dcc8e5bf7de604891df2a8dc576973d71a281e916db2ff"
 "checksum jpeg-decoder 0.1.15 (registry+https://github.com/rust-lang/crates.io-index)" = "c8b7d43206b34b3f94ea9445174bda196e772049b9bddbc620c9d29b2d20110d"
 "checksum khronos_api 3.1.0 (registry+https://github.com/rust-lang/crates.io-index)" = "e2db585e1d738fc771bf08a151420d3ed193d9d895a36df7f6f8a9456b911ddc"

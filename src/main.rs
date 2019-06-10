@@ -1,7 +1,7 @@
 use components::*;
-use glium::glutin::dpi::LogicalSize;
+use glium::glutin::dpi::{LogicalPosition, LogicalSize};
 use glium::glutin::{
-    ContextBuilder, ElementState, Event, EventsLoop, Icon, WindowBuilder, WindowEvent,
+    ContextBuilder, ElementState, Event, EventsLoop, Icon, MouseButton, WindowBuilder, WindowEvent,
 };
 use glium::Display;
 use specs::{Builder, Join, RunNow, World};
@@ -9,6 +9,7 @@ use std::time::{Duration, Instant};
 use systems::*;
 
 mod components;
+mod gui;
 mod systems;
 
 pub const DELTA_TIME: Duration = Duration::from_nanos(16700000);
@@ -72,7 +73,7 @@ fn main() {
         .create_entity()
         .with(Texture { atlas_index: 7 })
         .with(LocationInfo::new(Location::new(2, 2, 1), false))
-        .with(StorageInfo::new(10, 25))
+        .with(StorageInfo::new(10, 25, "Log"))
         .build();
     let lizardman_entity = world
         .create_entity()
@@ -80,7 +81,7 @@ fn main() {
         .with(LocationInfo::new(Location::new(5, 7, 1), false))
         .with(Attackable::new(15, WeaponType::Sword, None))
         .build();
-    let sword_storage_info = StorageInfo::new(10, 6);
+    let sword_storage_info = StorageInfo::new(10, 6, "Sword");
     let sword_entity = world
         .create_entity()
         .with(Weapon::new(
@@ -91,7 +92,7 @@ fn main() {
         ))
         .with(sword_storage_info)
         .build();
-    let axe_storage_info = StorageInfo::new(7, 10);
+    let axe_storage_info = StorageInfo::new(7, 10, "Axe");
     let axe_entity = world
         .create_entity()
         .with(Weapon::new(7, 20, Duration::from_secs(2), WeaponType::Axe))
@@ -144,36 +145,67 @@ fn main() {
     let mut current_time = Instant::now();
     let mut accumulator = Duration::from_nanos(0);
     let mut should_close = false;
+    let mut mouse_location = LogicalPosition::new(0.0, 0.0);
     while !should_close {
-        event_loop.poll_events(|event| match event {
-            Event::WindowEvent { event, .. } => match event {
-                WindowEvent::CloseRequested => should_close = true,
-                WindowEvent::KeyboardInput { input, .. }
-                    if input.state == ElementState::Pressed =>
-                {
-                    match input.scancode {
-                        // W
-                        17 => {
-                            render_system.camera_center.y += 1;
-                        }
-                        // A
-                        30 => {
-                            render_system.camera_center.x -= 1;
-                        }
-                        // S
-                        31 => {
-                            render_system.camera_center.y -= 1;
-                        }
-                        // D
-                        32 => {
-                            render_system.camera_center.x += 1;
-                        }
-                        _ => {}
+        event_loop.poll_events(|event| {
+            imgui_winit_support::handle_event(
+                &mut render_system.gui.imgui,
+                &event,
+                render_system.display.gl_window().get_hidpi_factor(),
+                render_system.display.gl_window().get_hidpi_factor().round(),
+            );
+
+            match event {
+                Event::WindowEvent { event, .. } => match event {
+                    WindowEvent::CloseRequested => should_close = true,
+                    WindowEvent::CursorMoved { position, .. } => {
+                        mouse_location = position;
                     }
-                }
+                    WindowEvent::MouseInput { state, button, .. }
+                        if (state == ElementState::Pressed && button == MouseButton::Left) =>
+                    {
+                        let click_location = Location::new(
+                            (mouse_location.x / TEXTURE_SIZE as f64) as i32
+                                - (VIEWPORT_SIZE / 2.0).floor() as i32,
+                            (-mouse_location.y / TEXTURE_SIZE as f64) as i32
+                                + (VIEWPORT_SIZE / 2.0).floor() as i32,
+                            0,
+                        );
+                        render_system.gui.handle_click(click_location, &world);
+                    }
+                    WindowEvent::KeyboardInput { input, .. }
+                        if input.state == ElementState::Pressed =>
+                    {
+                        match input.scancode {
+                            // W
+                            17 => {
+                                render_system.camera_center.y += 1;
+                            }
+                            // A
+                            30 => {
+                                render_system.camera_center.x -= 1;
+                            }
+                            // S
+                            31 => {
+                                render_system.camera_center.y -= 1;
+                            }
+                            // D
+                            32 => {
+                                render_system.camera_center.x += 1;
+                            }
+                            _ => {}
+                        }
+
+                    }
+                    _ => {}
+                },
                 _ => {}
-            },
-            _ => {}
+            }
+
+            imgui_winit_support::update_mouse_cursor(
+                &render_system.gui.imgui,
+                &render_system.display.gl_window(),
+            );
         });
 
         let new_time = Instant::now();

@@ -94,11 +94,16 @@ impl Inventory {
 pub struct StorageInfo {
     pub volume: u32,
     pub weight: u32,
+    pub name: &'static str,
 }
 
 impl StorageInfo {
-    pub fn new(volume: u32, weight: u32) -> Self {
-        Self { volume, weight }
+    pub fn new(volume: u32, weight: u32, name: &'static str) -> Self {
+        Self {
+            volume,
+            weight,
+            name,
+        }
     }
 }
 

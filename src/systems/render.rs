@@ -1,4 +1,5 @@
 use crate::components::{Location, LocationInfo, Texture};
+use crate::gui::GUI;
 use crate::{NUMBER_OF_TEXTURES, VIEWPORT_SIZE};
 use glium::index::PrimitiveType;
 use glium::texture::{RawImage2d, SrgbTexture2d};
@@ -13,6 +14,7 @@ use std::io::Cursor;
 
 pub struct RenderSystem {
     pub camera_center: Location,
+    pub gui: GUI,
     pub display: Display,
     texture_atlas: SrgbTexture2d,
     program: Program,
@@ -97,6 +99,7 @@ impl RenderSystem {
 
         Self {
             camera_center: Location::new(0, 0, 0),
+            gui: GUI::new(&display),
             display,
             texture_atlas,
             program,
@@ -138,20 +141,14 @@ impl<'a> System<'a> for RenderSystem {
             ..Default::default()
         };
         draw_target
-            .draw(
-                (
-                    &self.template_vertices,
-                    instances
-                        .per_instance()
-                        .expect("Draw call failed: Instancing not supported"),
-                ),
+            .draw((&self.template_vertices, instances.per_instance().expect("Instancing not supported")),
                 &self.indices,
                 &self.program,
-                &uniform!(texture_atlas: Sampler::new(&self.texture_atlas)
-.magnify_filter(MagnifySamplerFilter::Nearest)),
+                &uniform!(texture_atlas: Sampler::new(&self.texture_atlas).magnify_filter(MagnifySamplerFilter::Nearest)),
                 &draw_parameters,
             )
-            .expect("Draw call failed");
+            .expect("World draw call failed");
+        self.gui.render(&draw_target);
         draw_target
             .finish()
             .expect("Could not swap display buffers");

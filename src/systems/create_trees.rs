@@ -119,7 +119,7 @@ fn create_pile_of_logs(tree_entity: Entity, lazy_update: &Read<LazyUpdate>) {
                 .create_entity()
                 .with(Texture { atlas_index: 7 })
                 .with(LocationInfo::new(tree_location, false))
-                .with(StorageInfo::new(10, 25))
+                .with(StorageInfo::new(10, 25, "Log"))
                 .build();
         }
     });
