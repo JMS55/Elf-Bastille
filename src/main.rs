@@ -154,6 +154,10 @@ fn main() {
                 render_system.display.gl_window().get_hidpi_factor(),
                 render_system.display.gl_window().get_hidpi_factor().round(),
             );
+            imgui_winit_support::update_mouse_cursor(
+                &render_system.gui.imgui,
+                &render_system.display.gl_window(),
+            );
 
             match event {
                 Event::WindowEvent { event, .. } => match event {
@@ -201,11 +205,6 @@ fn main() {
                 },
                 _ => {}
             }
-
-            imgui_winit_support::update_mouse_cursor(
-                &render_system.gui.imgui,
-                &render_system.display.gl_window(),
-            );
         });
 
         let new_time = Instant::now();

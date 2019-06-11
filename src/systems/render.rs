@@ -148,7 +148,7 @@ impl<'a> System<'a> for RenderSystem {
                 &draw_parameters,
             )
             .expect("World draw call failed");
-        self.gui.render(&draw_target);
+        self.gui.render(&mut draw_target, &self.display);
         draw_target
             .finish()
             .expect("Could not swap display buffers");
