@@ -4,7 +4,7 @@ use glium::glutin::{
     ContextBuilder, ElementState, Event, EventsLoop, Icon, MouseButton, WindowBuilder, WindowEvent,
 };
 use glium::Display;
-use specs::{Builder, Join, RunNow, World};
+use specs::{Builder, RunNow, World};
 use std::time::{Duration, Instant};
 use systems::*;
 
@@ -67,69 +67,14 @@ fn main() {
     let mut movement_system = MovementSystem;
     let mut render_system = RenderSystem::new(display);
 
-    // Test world - Entities don't have an IsStored component
-    let mut ran_once = false;
-    let log_entity = world
+    // Test world
+    world
         .create_entity()
-        .with(Texture { atlas_index: 7 })
-        .with(LocationInfo::new(Location::new(2, 2, 1), false))
-        .with(StorageInfo::new(10, 25, "Log"))
-        .build();
-    let lizardman_entity = world
-        .create_entity()
-        .with(Texture { atlas_index: 10 })
-        .with(LocationInfo::new(Location::new(5, 7, 1), false))
-        .with(Attackable::new(15, WeaponType::Sword, None))
-        .build();
-    let sword_storage_info = StorageInfo::new(10, 6, "Sword");
-    let sword_entity = world
-        .create_entity()
-        .with(Weapon::new(
-            3,
-            20,
-            Duration::from_secs(1),
-            WeaponType::Sword,
-        ))
-        .with(sword_storage_info)
-        .build();
-    let axe_storage_info = StorageInfo::new(7, 10, "Axe");
-    let axe_entity = world
-        .create_entity()
-        .with(Weapon::new(7, 20, Duration::from_secs(2), WeaponType::Axe))
-        .with(axe_storage_info)
-        .build();
-    let elf_builder = world.create_entity();
-    let mut elf = Elf::new();
-    elf.queue_action(ActionMove::new(Location::new(-8, 10, 1)));
-    // Should be skipped over
-    elf.queue_action(ActionStore::new(
-        log_entity,
-        elf_builder.entity,
-        Duration::from_secs(2),
-    ));
-    elf.queue_action(ActionMove::new(Location::new(1, 2, 1)));
-    elf.queue_action(ActionStore::new(
-        log_entity,
-        elf_builder.entity,
-        Duration::from_secs(2),
-    ));
-    // Should be skipped over
-    elf.queue_action(ActionMove::new(Location::new(10, 10, 1)));
-    elf.queue_action(ActionMove::new(Location::new(4, 7, 1)));
-    elf.queue_action(ActionAttack::new(lizardman_entity));
-    let mut elf_inventory = Inventory::new(100, 100);
-    elf_inventory.stored_entities.insert(sword_entity);
-    elf_inventory.stored_entities.insert(axe_entity);
-    elf_inventory.volume_free -= sword_storage_info.volume;
-    elf_inventory.weight_free -= sword_storage_info.weight;
-    elf_inventory.volume_free -= axe_storage_info.volume;
-    elf_inventory.weight_free -= axe_storage_info.weight;
-    elf_builder
-        .with(elf)
+        .with(Elf::new())
         .with(Texture { atlas_index: 1 })
         .with(MovementInfo::new(Duration::from_millis(333)))
         .with(LocationInfo::new(Location::new(0, 0, 1), false))
-        .with(elf_inventory)
+        .with(Inventory::new(100, 60))
         .build();
     for x in -10..=10 {
         for y in -10..=10 {
@@ -166,7 +111,9 @@ fn main() {
                         mouse_location = position;
                     }
                     WindowEvent::MouseInput { state, button, .. }
-                        if (state == ElementState::Pressed && button == MouseButton::Left) =>
+                        if (state == ElementState::Pressed
+                            && button == MouseButton::Left
+                            && !render_system.gui.want_capture_mouse()) =>
                     {
                         let click_location = Location::new(
                             (mouse_location.x / TEXTURE_SIZE as f64) as i32
@@ -178,7 +125,8 @@ fn main() {
                         render_system.gui.handle_click(click_location, &world);
                     }
                     WindowEvent::KeyboardInput { input, .. }
-                        if input.state == ElementState::Pressed =>
+                        if (input.state == ElementState::Pressed
+                            && !render_system.gui.want_capture_keyboard()) =>
                     {
                         match input.scancode {
                             // W
@@ -225,31 +173,6 @@ fn main() {
             pathfind_system.run_now(&world.res);
             movement_system.run_now(&world.res);
             world.maintain();
-
-            // Test world
-            if !ran_once {
-                let tree_entity = {
-                    let mut tree_entity = None;
-                    for (_, entity, location) in (
-                        &world.read_storage::<Tree>(),
-                        &world.entities(),
-                        &world.read_storage::<LocationInfo>(),
-                    )
-                        .join()
-                    {
-                        if location.location == Location::new(-10, -7, 1) {
-                            tree_entity = Some(entity);
-                            break;
-                        }
-                    }
-                    tree_entity
-                };
-                for elf in (&mut world.write_storage::<Elf>()).join() {
-                    elf.queue_action(ActionMove::new(Location::new(-9, -7, 1)));
-                    elf.queue_action(ActionAttack::new(tree_entity.unwrap()));
-                }
-                ran_once = true;
-            }
 
             accumulator -= DELTA_TIME;
         }

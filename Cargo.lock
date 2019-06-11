@@ -304,6 +304,7 @@ dependencies = [
  "image 0.21.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "imgui 0.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "imgui-glium-renderer 0.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
+ "imgui-sys 0.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "imgui-winit-support 0.0.23 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.6.5 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand_pcg 0.1.2 (registry+https://github.com/rust-lang/crates.io-index)",
