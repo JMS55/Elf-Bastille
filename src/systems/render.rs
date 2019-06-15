@@ -1,4 +1,4 @@
-use crate::components::{Location, LocationInfo, Texture};
+use crate::components::{Elf, Inventory, Location, LocationInfo, StorageInfo, Texture};
 use crate::gui::GUI;
 use crate::{NUMBER_OF_TEXTURES, VIEWPORT_SIZE};
 use glium::index::PrimitiveType;
@@ -9,7 +9,7 @@ use glium::{
     Program, Surface, VertexBuffer,
 };
 use rayon::iter::ParallelIterator;
-use specs::{ParJoin, ReadStorage, System};
+use specs::{Entities, ParJoin, ReadStorage, System, WriteStorage};
 use std::io::Cursor;
 
 pub struct RenderSystem {
@@ -110,9 +110,19 @@ impl RenderSystem {
 }
 
 impl<'a> System<'a> for RenderSystem {
-    type SystemData = (ReadStorage<'a, LocationInfo>, ReadStorage<'a, Texture>);
+    type SystemData = (
+        ReadStorage<'a, LocationInfo>,
+        ReadStorage<'a, Texture>,
+        ReadStorage<'a, Inventory>,
+        ReadStorage<'a, StorageInfo>,
+        WriteStorage<'a, Elf>,
+        Entities<'a>,
+    );
 
-    fn run(&mut self, (location_data, texture_data): Self::SystemData) {
+    fn run(
+        &mut self,
+        (location_data, texture_data, inventory_data,storage_info_data, mut elf_data, entities): Self::SystemData,
+    ) {
         let mut draw_target = self.display.draw();
         draw_target.clear_color_srgb_and_depth((0.0, 0.0, 0.0, 1.0), 1.0);
         let camera_center = self.camera_center;
@@ -148,7 +158,15 @@ impl<'a> System<'a> for RenderSystem {
                 &draw_parameters,
             )
             .expect("World draw call failed");
-        self.gui.render(&mut draw_target, &self.display);
+        self.gui.render(
+            &mut draw_target,
+            &self.display,
+            &inventory_data,
+            &location_data,
+            &storage_info_data,
+            &mut elf_data,
+            &entities,
+        );
         draw_target
             .finish()
             .expect("Could not swap display buffers");

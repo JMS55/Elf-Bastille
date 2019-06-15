@@ -1,9 +1,12 @@
-use crate::components::{ActionMove, Elf, Location, LocationInfo};
+use crate::components::{
+    ActionMove, ActionStore, Elf, Inventory, Location, LocationInfo, StorageInfo,
+};
 use glium::{Display, Frame};
-use imgui::{im_str, ImGui, ImGuiCond};
+use imgui::{im_str, ImGui, ImGuiCond, ImString};
 use imgui_glium_renderer::Renderer;
-use specs::{Entity, Join, World};
 
+use specs::{Entities, Entity, Join, ReadStorage, World, WriteStorage};
+use std::time::Duration;
 pub struct GUI {
     pub imgui: ImGui,
     pub renderer: Renderer,
@@ -86,13 +89,22 @@ impl GUI {
                     self.gui_state = GUIState::MoveScreen(selected_entity, false);
                 }
             }
-            GUIState::InventoryScreen => {
-                unimplemented!("TODO: Handle clicks for inventory screen");
-            }
+            GUIState::InventorySelectionScreen(_) => {}
+            GUIState::InventoryElf(_, _) => {}
+            GUIState::InventoryOther(_, _) => {}
         }
     }
 
-    pub fn render(&mut self, draw_target: &mut Frame, display: &Display) {
+    pub fn render(
+        &mut self,
+        draw_target: &mut Frame,
+        display: &Display,
+        inventory_data: &ReadStorage<Inventory>,
+        location_data: &ReadStorage<LocationInfo>,
+        storage_info_data: &ReadStorage<StorageInfo>,
+        elf_data: &mut WriteStorage<Elf>,
+        entities: &Entities,
+    ) {
         let hidpi_factor = display.gl_window().get_hidpi_factor().round();
         let frame_size =
             imgui_winit_support::get_frame_size(&display.gl_window(), hidpi_factor).unwrap();
@@ -109,7 +121,7 @@ impl GUI {
                             new_gui_state = GUIState::MoveScreen(selected_entity, false);
                         }
                         if ui.button(im_str!("Inventory"), (0.0, 0.0)) {
-                            new_gui_state = GUIState::InventoryScreen;
+                            new_gui_state = GUIState::InventorySelectionScreen(selected_entity);
                         }
                     });
             }
@@ -130,8 +142,104 @@ impl GUI {
                         }
                     });
             }
-            GUIState::InventoryScreen => {
-                unimplemented!("TODO: Render inventory screen");
+            GUIState::InventorySelectionScreen(selected_entity) => {
+                let selected_entity_location = location_data
+                    .get(selected_entity)
+                    .expect("Selected entity in InventorySelectionScreen did not have a LocationInfo component")
+                    .location;
+                ui.window(im_str!(""))
+                    .size((400.0, 300.0), ImGuiCond::FirstUseEver)
+                    .build(|| {
+                        if ui.button(im_str!("Elf"), (0.0, 0.0)) {
+                            new_gui_state = GUIState::InventoryElf(selected_entity, None);
+                        }
+                        for other_entity in (inventory_data, location_data, entities)
+                            .join()
+                            .filter_map(|(_, other_location, other_entity)| {
+                                if other_location
+                                    .location
+                                    .is_adjacent_to(&selected_entity_location)
+                                {
+                                    Some(other_entity)
+                                } else {
+                                    None
+                                }
+                            })
+                        {
+                            if ui.button(im_str!("Other"), (0.0, 0.0)) {
+                                new_gui_state =
+                                    GUIState::InventoryOther(selected_entity, other_entity);
+                            }
+                        }
+                        ui.separator();
+                        if ui.button(im_str!("Back"), (0.0, 0.0)) {
+                            new_gui_state = GUIState::MainScreen(selected_entity);
+                        }
+                    });
+            }
+            GUIState::InventoryElf(selected_entity, other_entity) => {
+                let selected_entity_inventory = inventory_data
+                    .get(selected_entity)
+                    .expect("Selected entity in InventoryElf did not have an Inventory component");
+                let selected_entity_elf = elf_data
+                    .get_mut(selected_entity)
+                    .expect("Selected entity in InventoryElf did not have an Elf component");
+                ui.window(im_str!(""))
+                    .size((400.0, 300.0), ImGuiCond::FirstUseEver)
+                    .build(|| {
+                        ui.text(format!(
+                            "Volume used: {}/{} Weight used: {}/{}",
+                            selected_entity_inventory.max_volume
+                                - selected_entity_inventory.volume_free,
+                            selected_entity_inventory.max_volume,
+                            selected_entity_inventory.max_weight
+                                - selected_entity_inventory.weight_free,
+                            selected_entity_inventory.max_weight
+                        ));
+                        for stored_entity in &selected_entity_inventory.stored_entities {
+                            let stored_entity_storage_info = storage_info_data.get(*stored_entity).expect("Stored entity in InventoryElf did not have a StorageInfo component");
+                            if let Some(other_entity) = other_entity {
+                                if ui.button(&ImString::from(format!("{} - Volume: {} Weight: {}", stored_entity_storage_info.name, stored_entity_storage_info.volume, stored_entity_storage_info.weight)), (0.0, 0.0)) {
+                                    selected_entity_elf.queue_action(ActionStore::new(*stored_entity, other_entity, Duration::from_secs(3)));
+                                }
+                            } else {
+                                ui.text(format!("{} - Volume: {} Weight: {}", stored_entity_storage_info.name, stored_entity_storage_info.volume, stored_entity_storage_info.weight));
+                            }
+                        }
+                        ui.separator();
+                        if ui.button(im_str!("Back"), (0.0, 0.0)) {
+                            new_gui_state = GUIState::MainScreen(selected_entity);
+                        }
+                    });
+            }
+            GUIState::InventoryOther(selected_entity, other_entity) => {
+                let other_entity_inventory = inventory_data
+                    .get(other_entity)
+                    .expect("Other entity in InventoryOther did not have an Inventory component");
+                ui.window(im_str!(""))
+                    .size((400.0, 300.0), ImGuiCond::FirstUseEver)
+                    .build(|| {
+                        ui.text(format!(
+                            "Volume used: {}/{} Weight used: {}/{}",
+                            other_entity_inventory.max_volume
+                                - other_entity_inventory.volume_free,
+                            other_entity_inventory.max_volume,
+                            other_entity_inventory.max_weight
+                                - other_entity_inventory.weight_free,
+                            other_entity_inventory.max_weight
+                        ));
+                        for stored_entity in &other_entity_inventory.stored_entities {
+                            let stored_entity_storage_info = storage_info_data.get(*stored_entity).expect("Stored entity in InventoryOther did not have a StorageInfo component");
+                            ui.text(format!("{} - Volume: {} Weight: {}", stored_entity_storage_info.name, stored_entity_storage_info.volume, stored_entity_storage_info.weight));
+                        }
+                        if ui.button(im_str!("Insert"), (0.0, 0.0)) {
+                            new_gui_state = GUIState::InventoryElf(selected_entity, Some(other_entity));
+                        }
+                        ui.separator();
+                        if ui.button(im_str!("Back"), (0.0, 0.0)) {
+                            new_gui_state = GUIState::MainScreen(selected_entity);
+                        }
+                    });
             }
         }
 
@@ -158,5 +266,7 @@ pub enum GUIState {
     NoEntitySelected,
     MainScreen(Entity),
     MoveScreen(Entity, bool), // bool is assigning_movement_in_progress
-    InventoryScreen,
+    InventorySelectionScreen(Entity),
+    InventoryElf(Entity, Option<Entity>), // second Entity is the adjacent entity and allows for inserting into it
+    InventoryOther(Entity, Entity), // second Entity is the adjacent entity and allows for inserting into it
 }
