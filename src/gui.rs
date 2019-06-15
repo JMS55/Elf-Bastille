@@ -156,33 +156,46 @@ impl GUI {
                         if ui.button(im_str!("Elf"), (0.0, 0.0)) {
                             new_gui_state = GUIState::InventoryElf(selected_entity, None);
                         }
-                        for other_entity in (inventory_data.maybe(), location_data, entities)
-                            .join()
-                            .filter_map(|(inventory, other_location, other_entity)| {
+                        for other_entity in (location_data, entities).join().filter_map(
+                            |(other_location, other_entity)| {
                                 if other_location
                                     .location
                                     .is_adjacent_to(&selected_entity_location)
                                 {
-                                    Some((inventory.is_some(), other_entity))
+                                    Some(other_entity)
+                                } else {
+                                    None
+                                }
+                            },
+                        ) {
+                            if ui.button(im_str!("Other"), (0.0, 0.0)) {
+                                new_gui_state =
+                                    GUIState::InventoryOther(selected_entity, other_entity);
+                            }
+                        }
+                        for other_entity in (location_data, storage_info_data, entities)
+                            .join()
+                            .filter_map(|(other_location, other_storage_info, other_entity)| {
+                                if other_location
+                                    .location
+                                    .is_adjacent_to(&selected_entity_location)
+                                {
+                                    Some((other_entity, other_storage_info))
                                 } else {
                                     None
                                 }
                             })
                         {
-                            if other_entity.0 {
-                                if ui.button(im_str!("Other"), (0.0, 0.0)) {
-                                    new_gui_state =
-                                        GUIState::InventoryOther(selected_entity, other_entity.1);
-                                }
-                            } else {
-                                if ui.button(im_str!("Pickup"), (0.0, 0.0)) {
-                                    selected_entity_elf.queue_action(ActionStore::new(
-                                        other_entity.1,
-                                        selected_entity,
-                                        Duration::from_secs(3),
-                                    ));
-                                    new_gui_state = GUIState::MainScreen(selected_entity);
-                                }
+                            if ui.button(
+                                &ImString::from(format!("Pickup - {}", other_entity.1.name)),
+                                (0.0, 0.0),
+                            ) {
+                                selected_entity_elf.queue_action(ActionStore::new(
+                                    other_entity.0,
+                                    selected_entity,
+                                    Duration::from_secs(3),
+                                ));
+                                new_gui_state = GUIState::MainScreen(selected_entity);
                             }
                         }
                         ui.separator();
