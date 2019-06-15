@@ -147,28 +147,42 @@ impl GUI {
                     .get(selected_entity)
                     .expect("Selected entity in InventorySelectionScreen did not have a LocationInfo component")
                     .location;
+                let selected_entity_elf = elf_data.get_mut(selected_entity).expect(
+                    "Selected entity in InventorySelectionScreen did not have an Elf component",
+                );
                 ui.window(im_str!(""))
                     .size((400.0, 300.0), ImGuiCond::FirstUseEver)
                     .build(|| {
                         if ui.button(im_str!("Elf"), (0.0, 0.0)) {
                             new_gui_state = GUIState::InventoryElf(selected_entity, None);
                         }
-                        for other_entity in (inventory_data, location_data, entities)
+                        for other_entity in (inventory_data.maybe(), location_data, entities)
                             .join()
-                            .filter_map(|(_, other_location, other_entity)| {
+                            .filter_map(|(inventory, other_location, other_entity)| {
                                 if other_location
                                     .location
                                     .is_adjacent_to(&selected_entity_location)
                                 {
-                                    Some(other_entity)
+                                    Some((inventory.is_some(), other_entity))
                                 } else {
                                     None
                                 }
                             })
                         {
-                            if ui.button(im_str!("Other"), (0.0, 0.0)) {
-                                new_gui_state =
-                                    GUIState::InventoryOther(selected_entity, other_entity);
+                            if other_entity.0 {
+                                if ui.button(im_str!("Other"), (0.0, 0.0)) {
+                                    new_gui_state =
+                                        GUIState::InventoryOther(selected_entity, other_entity.1);
+                                }
+                            } else {
+                                if ui.button(im_str!("Pickup"), (0.0, 0.0)) {
+                                    selected_entity_elf.queue_action(ActionStore::new(
+                                        other_entity.1,
+                                        selected_entity,
+                                        Duration::from_secs(3),
+                                    ));
+                                    new_gui_state = GUIState::MainScreen(selected_entity);
+                                }
                             }
                         }
                         ui.separator();
