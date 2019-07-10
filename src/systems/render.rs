@@ -12,60 +12,90 @@ use std::io::Cursor;
 
 const TEXTURE_ATLAS_SIZE: u32 = 11;
 const TILE_SIZE_IN_PIXELS: u32 = 32;
-const DEFAULT_NUMBER_OF_TILES_ON_SCREEN: u32 = 11;
 
-pub struct RenderSystem<'dp> {
+pub struct RenderSystem {
     pub camera_center: Position,
     pub camera_zoom_factor: u32,
     display: Display,
     program: Program,
     template_vertices: VertexBuffer<TemplateVertex>,
     indices: IndexBuffer<u8>,
-    draw_parameters: DrawParameters<'dp>,
     texture_atlas: SrgbTexture2d,
 }
 
-impl<'dp> RenderSystem<'dp> {
+impl RenderSystem {
     pub fn new(event_loop: &EventsLoop) -> Self {
         let primary_monitor = event_loop.get_primary_monitor();
-        let dpi_factor = primary_monitor.get_hidpi_factor() as u32;
-        let window = WindowBuilder::new().with_fullscreen(Some(primary_monitor));
+        let dpi_factor = primary_monitor.get_hidpi_factor();
+        let window = WindowBuilder::new()
+            .with_fullscreen(Some(primary_monitor))
+            .with_decorations(false);
         let context = ContextBuilder::new().with_vsync(true).with_srgb(true);
         let display = Display::new(window, context, &event_loop).expect("Could not create Display");
 
-        let vertex_shader_src = r#""#;
-        let fragment_shader_src = r#""#;
+        let vertex_shader_src = format!(
+            r#"
+            #version 130
+
+            uniform vec2  screen_size;
+            uniform vec2  camera_center;
+            uniform float camera_zoom_factor;
+            in vec2  t_vertex;
+            in vec2  t_texture;
+            in vec2  i_position;
+            in float i_texture_atlas_index;
+            out vec2 v_texture;
+
+            void main() {{
+                v_texture = t_texture;
+                v_texture.x += i_texture_atlas_index / {};
+                gl_Position = vec4(t_vertex + i_position - camera_center, 0.0, 1.0);
+                gl_Position.x = gl_Position.x * {} * camera_zoom_factor / screen_size.x;
+                gl_Position.y = gl_Position.y * {} * camera_zoom_factor / screen_size.y;
+            }}
+        "#,
+            TEXTURE_ATLAS_SIZE as f32, TILE_SIZE_IN_PIXELS as f32, TILE_SIZE_IN_PIXELS as f32,
+        );
+        let fragment_shader_src = r#"
+            #version 130
+
+            uniform sampler2D texture_atlas;
+            in vec2 v_texture;
+            out vec4 pixel;
+
+            void main() {
+                pixel = texture(texture_atlas, v_texture);
+                if (pixel.a < 0.5) {
+                    discard;
+                }
+            }
+        "#;
         let program = Program::from_source(&display, &vertex_shader_src, fragment_shader_src, None)
             .expect("Could not create Program");
         let template_vertices = VertexBuffer::new(
             &display,
             &[
                 TemplateVertex {
-                    vertex: [1.0, 1.0],
-                    texture: [0.0, 1.0],
+                    t_vertex: [0.5, 0.5],
+                    t_texture: [0.0, 1.0],
                 },
                 TemplateVertex {
-                    vertex: [-1.0, 1.0],
-                    texture: [1.0 / TEXTURE_ATLAS_SIZE as f32, 1.0],
+                    t_vertex: [-0.5, 0.5],
+                    t_texture: [1.0 / TEXTURE_ATLAS_SIZE as f32, 1.0],
                 },
                 TemplateVertex {
-                    vertex: [1.0, -1.0],
-                    texture: [0.0, 0.0],
+                    t_vertex: [0.5, -0.5],
+                    t_texture: [0.0, 0.0],
                 },
                 TemplateVertex {
-                    vertex: [-1.0, -1.0],
-                    texture: [1.0 / TEXTURE_ATLAS_SIZE as f32, 0.0],
+                    t_vertex: [-0.5, -0.5],
+                    t_texture: [1.0 / TEXTURE_ATLAS_SIZE as f32, 0.0],
                 },
             ],
         )
         .expect("Could not create template VertexBuffer");
         let indices = IndexBuffer::new(&display, PrimitiveType::TrianglesList, &[0, 1, 3, 0, 2, 3])
             .expect("Could not create template IndexBuffer");
-        let draw_parameters = DrawParameters {
-            multisampling: false,
-            dithering: false,
-            ..Default::default()
-        };
 
         let image = image::load(
             Cursor::new(&include_bytes!("../../texture_atlas.png")[..]),
@@ -80,11 +110,14 @@ impl<'dp> RenderSystem<'dp> {
 
         let camera_center = Position { x: 0, y: 0 };
         let mut screen_size = display.get_framebuffer_dimensions();
-        screen_size = (screen_size.0 / dpi_factor, screen_size.1 / dpi_factor);
+        screen_size = (
+            (screen_size.0 as f64 / dpi_factor) as u32,
+            (screen_size.1 as f64 / dpi_factor) as u32,
+        );
         let camera_zoom_factor = screen_size
             .0
             .max(screen_size.1)
-            .checked_div(DEFAULT_NUMBER_OF_TILES_ON_SCREEN * TILE_SIZE_IN_PIXELS)
+            .checked_div(10 * TILE_SIZE_IN_PIXELS)
             .unwrap_or(1);
 
         Self {
@@ -94,21 +127,21 @@ impl<'dp> RenderSystem<'dp> {
             program,
             template_vertices,
             indices,
-            draw_parameters,
             texture_atlas,
         }
     }
 
     pub fn zoom_camera(&mut self, in_or_out: bool) {
-        if in_or_out {
-            self.camera_zoom_factor = self.camera_zoom_factor.saturating_add(1);
-        } else {
-            self.camera_zoom_factor = self.camera_zoom_factor.saturating_sub(1);
+        if in_or_out && self.camera_zoom_factor != u32::max_value() {
+            self.camera_zoom_factor += 1;
+        }
+        if !in_or_out && self.camera_zoom_factor != 1 {
+            self.camera_zoom_factor -= 1;
         }
     }
 }
 
-impl<'dp, 's> System<'s> for RenderSystem<'dp> {
+impl<'s> System<'s> for RenderSystem {
     type SystemData = (ReadStorage<'s, Texture>, ReadStorage<'s, Position>);
 
     fn run(&mut self, (texture_data, position_data): Self::SystemData) {
@@ -117,15 +150,23 @@ impl<'dp, 's> System<'s> for RenderSystem<'dp> {
         let instance_data = (&texture_data, &position_data)
             .par_join()
             .map(|(texture, position)| InstanceData {
-                position: [position.x as f32, position.y as f32],
-                texture_atlas_index: texture.atlas_index as f32,
+                i_position: [position.x as f32, position.y as f32],
+                i_texture_atlas_index: texture.atlas_index as f32,
             })
             .collect::<Vec<InstanceData>>();
         let instances = VertexBuffer::new(&self.display, &instance_data)
             .expect("Could not create instance VertexBuffer");
+        let screen_size = self.display.get_framebuffer_dimensions();
         let uniforms = uniform! {
+            screen_size: [screen_size.0 as f32, screen_size.1 as f32],
+            camera_center: [self.camera_center.x as f32, self.camera_center.y as f32],
+            camera_zoom_factor: self.camera_zoom_factor as f32,
             texture_atlas: Sampler::new(&self.texture_atlas).magnify_filter(MagnifySamplerFilter::Nearest),
-            camera_center: [self.camera_center.x as f32, self.camera_center.y as f32]
+        };
+        let draw_parameters = DrawParameters {
+            multisampling: false,
+            dithering: false,
+            ..Default::default()
         };
         draw_target
             .draw(
@@ -136,7 +177,7 @@ impl<'dp, 's> System<'s> for RenderSystem<'dp> {
                 &self.indices,
                 &self.program,
                 &uniforms,
-                &self.draw_parameters,
+                &draw_parameters,
             )
             .expect("Could not submit draw call");
         draw_target.finish().expect("Could not draw frame");
@@ -145,15 +186,15 @@ impl<'dp, 's> System<'s> for RenderSystem<'dp> {
 
 #[derive(Copy, Clone)]
 struct TemplateVertex {
-    vertex: [f32; 2],
-    texture: [f32; 2],
+    t_vertex: [f32; 2],
+    t_texture: [f32; 2],
 }
 
 #[derive(Copy, Clone)]
 struct InstanceData {
-    position: [f32; 2],
-    texture_atlas_index: f32,
+    i_position: [f32; 2],
+    i_texture_atlas_index: f32,
 }
 
-implement_vertex!(TemplateVertex, vertex, texture);
-implement_vertex!(InstanceData, position, texture_atlas_index);
+implement_vertex!(TemplateVertex, t_vertex, t_texture);
+implement_vertex!(InstanceData, i_position, i_texture_atlas_index);
