@@ -28,6 +28,11 @@ fn main() {
                     if input.state == ElementState::Pressed =>
                 {
                     match input.scancode {
+                        // Esc
+                        #[cfg(debug_assertions)]
+                        1 => {
+                            should_close = true;
+                        }
                         // W
                         17 => {
                             render_system.camera_center.y += 1;
