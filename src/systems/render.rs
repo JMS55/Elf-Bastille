@@ -1,4 +1,5 @@
 use crate::components::{Position, Texture};
+use glium::glutin::dpi::LogicalPosition;
 use glium::glutin::{ContextBuilder, EventsLoop, WindowBuilder};
 use glium::index::PrimitiveType;
 use glium::texture::{RawImage2d, SrgbTexture2d};
@@ -14,8 +15,9 @@ const TEXTURE_ATLAS_SIZE: u32 = 11;
 const TILE_SIZE_IN_PIXELS: u32 = 32;
 
 pub struct RenderSystem {
-    pub camera_center: Position,
-    pub camera_zoom_factor: u32,
+    camera_center: Position,
+    camera_zoom_factor: u32,
+    hovered_tile: Position,
     display: Display,
     program: Program,
     template_vertices: VertexBuffer<TemplateVertex>,
@@ -50,8 +52,8 @@ impl RenderSystem {
                 v_texture = t_texture;
                 v_texture.x += i_texture_atlas_index / {};
                 gl_Position = vec4(t_vertex + i_position - camera_center, 0.0, 1.0);
-                gl_Position.x = gl_Position.x * {} * camera_zoom_factor / screen_size.x;
-                gl_Position.y = gl_Position.y * {} * camera_zoom_factor / screen_size.y;
+                gl_Position.x = gl_Position.x * {} * 2 * (camera_zoom_factor / screen_size.x);
+                gl_Position.y = gl_Position.y * {} * 2 * (camera_zoom_factor / screen_size.y);
             }}
         "#,
             TEXTURE_ATLAS_SIZE as f32, TILE_SIZE_IN_PIXELS as f32, TILE_SIZE_IN_PIXELS as f32,
@@ -117,12 +119,13 @@ impl RenderSystem {
         let camera_zoom_factor = screen_size
             .0
             .max(screen_size.1)
-            .checked_div(10 * TILE_SIZE_IN_PIXELS)
+            .checked_div(20 * TILE_SIZE_IN_PIXELS)
             .unwrap_or(1);
 
         Self {
             camera_center,
             camera_zoom_factor,
+            hovered_tile: Position { x: 0, y: 0 },
             display,
             program,
             template_vertices,
@@ -131,13 +134,38 @@ impl RenderSystem {
         }
     }
 
-    pub fn zoom_camera(&mut self, in_or_out: bool) {
+    pub fn move_camera(&mut self, x_offset: i32, y_offset: i32, cursor_position: LogicalPosition) {
+        self.camera_center.x += x_offset;
+        self.camera_center.y += y_offset;
+        self.set_hovered_tile(cursor_position);
+    }
+
+    pub fn zoom_camera(&mut self, in_or_out: bool, cursor_position: LogicalPosition) {
         if in_or_out && self.camera_zoom_factor != u32::max_value() {
             self.camera_zoom_factor += 1;
         }
         if !in_or_out && self.camera_zoom_factor != 1 {
             self.camera_zoom_factor -= 1;
         }
+        self.set_hovered_tile(cursor_position);
+    }
+
+    pub fn set_hovered_tile(&mut self, cursor_position: LogicalPosition) {
+        let screen_size = self.display.get_framebuffer_dimensions();
+        let tile_size = (TILE_SIZE_IN_PIXELS * self.camera_zoom_factor) as f64;
+
+        let h_tiles_across = screen_size.0 as f64 / tile_size;
+        let h_tiles_per_side = (h_tiles_across - 1.0) / 2.0;
+        let h_pixels_per_side = h_tiles_per_side * tile_size;
+        self.hovered_tile.x = ((cursor_position.x - h_pixels_per_side) / tile_size).floor() as i32
+            + self.camera_center.x;
+
+        let v_tiles_across = screen_size.1 as f64 / tile_size;
+        let v_tiles_per_side = (v_tiles_across - 1.0) / 2.0;
+        let v_pixels_per_side = v_tiles_per_side * tile_size;
+        self.hovered_tile.y = ((cursor_position.y - v_pixels_per_side) / tile_size).floor() as i32
+            * -1
+            + self.camera_center.y;
     }
 }
 
